@@ -1,0 +1,41 @@
+{
+  "name": "orbital-news",
+  "version": "1.0.0",
+  "description": "A personalized news aggregator using a solar system metaphor",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "ts-node server/src/index.ts",
+    "dev:watch": "ts-node-dev --respawn --transpile-only server/src/index.ts",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "pnpm": ">=7.0.0"
+  },
+  "packageManager": "pnpm@8.10.0",
+  "keywords": [
+    "news",
+    "aggregator",
+    "solar-system",
+    "personalization"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.18.2",
+    "pg": "^8.14.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "ts-node-dev": "^2.0.0"
+  }
+}
