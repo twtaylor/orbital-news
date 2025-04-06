@@ -91,7 +91,7 @@ export class OrbitalSystem {
       'Orbital News',
       0, 0, 0,  // Position
       0, 0, 0,  // Velocity
-      100000000, // Mass
+      1000, // Mass
       1,        // Radius
       0xffb300, // Color (yellow-orange)
       true,     // Fixed

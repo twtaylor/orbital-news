@@ -249,33 +249,45 @@ export class Planet {
       }
     };
     
-    // Calculate initial tangential velocity for a stable orbit
-    // Get distance from the sun (assuming sun is at 0,0,0)
-    const distanceFromSun = Math.sqrt(
-      article.position.x * article.position.x + 
-      article.position.z * article.position.z
-    );
+    // Calculate position vector from sun to article
+    const posX = article.position.x;
+    const posY = article.position.y;
+    const posZ = article.position.z;
     
-    // Calculate orbital velocity (simplified formula for circular orbit)
+    // Calculate distance from the sun (assuming sun is at 0,0,0)
+    const distanceFromSun = Math.sqrt(posX * posX + posZ * posZ);
+    
+    // Calculate base orbital velocity (simplified formula for circular orbit)
     // v = sqrt(G * M / r) where G is gravitational constant, M is sun's mass, r is distance
-    // We use a factor to slow it down further
     const sunMass = 100000000; // From the sun's mass in OrbitalSystem.createSun()
-    const orbitalSpeed = Math.sqrt((Planet.grav * sunMass) / distanceFromSun) * 0.3;
+    const baseOrbitalSpeed = Math.sqrt((Planet.grav * sunMass) / distanceFromSun);
     
-    // Calculate velocity components perpendicular to radius vector for circular orbit
-    const angle = Math.atan2(article.position.z, article.position.x);
+    // Calculate direction vector from sun to article
+    const angle = Math.atan2(posZ, posX);
+    
+    // Calculate perpendicular direction for tangential velocity
+    // For elliptical orbit, we'll use a factor between 0.7 and 0.9 of the circular velocity
+    // This creates an elliptical orbit rather than a circular one
+    const ellipticalFactor = 0.7 + (Math.random() * 0.2); // Between 0.7 and 0.9
+    const orbitalSpeed = baseOrbitalSpeed * ellipticalFactor;
+    
+    // Calculate velocity components perpendicular to radius vector
     const velX = -orbitalSpeed * Math.sin(angle);
     const velZ = orbitalSpeed * Math.cos(angle);
+    
+    // Add a small random vertical velocity component for variety
+    // This will create slightly inclined orbits
+    const velY = (Math.random() - 0.5) * 0.01;
 
     // Create a new planet
     const planet = new Planet(
       article.id,
       article.title.length > 20 ? article.title.substring(0, 20) + '...' : article.title,
-      article.position.x,
-      article.position.y,
-      article.position.z,
+      posX,
+      posY,
+      posZ,
       velX, // Initial tangential velocity x
-      0,    // No initial vertical velocity
+      velY, // Small random vertical velocity
       velZ, // Initial tangential velocity z
       article.mass,
       Math.max(0.1, Math.min(0.5, article.mass / 200000)), // Scale radius based on mass
