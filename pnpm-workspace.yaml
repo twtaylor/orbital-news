@@ -1,4 +1,3 @@
 packages:
   - 'server'
-  # Will add client package later
-  # - 'client'
+  - 'client'
