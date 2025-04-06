@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { Planet } from './Planet';
-import { Article } from '../types/Article';
 import { ArticleService } from '../services/api';
 
 /**
@@ -91,7 +90,7 @@ export class OrbitalSystem {
       'Orbital News',
       0, 0, 0,  // Position
       0, 0, 0,  // Velocity
-      1000, // Mass
+      500000000, // Mass - dramatically increased for much stronger gravitational pull
       1,        // Radius
       0xffb300, // Color (yellow-orange)
       true,     // Fixed

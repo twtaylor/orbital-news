@@ -8,11 +8,12 @@ import { Article } from '../types/Article';
 export class Planet {
   // Static properties for the planetary system
   static planets: Planet[] = [];
-  static grav: number = 1.5e-11; // Reduced gravitational constant for slower movement
+  static grav: number = 6.0e-11; // Dramatically increased gravitational constant
   static velCap: boolean = true; // Whether to cap velocity
-  static velCapVal: number = 0.05; // Reduced maximum velocity
+  static velCapVal: number = 0.04; // Further reduced maximum velocity
   static collisionSystem: boolean = false; // Whether to enable collisions
   static currentFollowed?: Planet; // Currently followed planet
+  static eclipticForce: number = 0.001; // Increased force pulling planets toward the ecliptic plane
 
   // Instance properties
   id: string;
@@ -85,7 +86,7 @@ export class Planet {
   /**
    * Create a text label for the planet
    */
-  createLabel(scene: THREE.Scene, font?: THREE.Font): void {
+  createLabel(scene: THREE.Scene): void {
     // If we already have a label, remove it
     if (this.label && scene.getObjectById(this.label.id)) {
       scene.remove(this.label);
@@ -133,16 +134,16 @@ export class Planet {
           const distance = this.pos.dist(Planet.planets[i].pos);
           
           // Apply a minimum distance threshold to prevent articles from falling into the sun
-          const effectiveDistance = Math.max(distance, 2.0);
+          const effectiveDistance = Math.max(distance, 2.5);
           
           // Calculate force with dampening factor for slower movement
           const force = forceDir.mul(
             (Planet.grav * this.mass * Planet.planets[i].mass) / 
-            (effectiveDistance * effectiveDistance) // Square the distance for more stable orbits
+            (effectiveDistance * effectiveDistance * effectiveDistance) // Cube the distance for more stable orbits
           );
           
           // Apply a dampening factor to slow down movement
-          const dampening = 0.8;
+          const dampening = 0.9;
           const acc = force.div(this.mass).mul(dampening);
           
           this.vel = this.vel.add(acc);
@@ -152,6 +153,16 @@ export class Planet {
           }
         }
       }
+      
+      // Apply force toward the ecliptic plane (y=0)
+      // This creates a tendency for planets to orbit in the same plane
+      if (Math.abs(this.pos.y) > 0.01) {
+        const eclipticForce = new Vector3D(0, -Math.sign(this.pos.y) * Planet.eclipticForce, 0);
+        this.vel = this.vel.add(eclipticForce);
+      }
+      
+      // Apply velocity dampening in the y direction to flatten orbits
+      this.vel.y *= 0.99; // Gradually reduce vertical velocity
     }
   }
 
@@ -160,7 +171,18 @@ export class Planet {
    */
   updatePosition(): void {
     if (!this.fixed) {
-      this.pos = this.pos.add(this.vel);
+      // Apply a time factor to speed up the simulation
+      const timeScale = 1.2; // Slightly reduced time scale for more stability
+      const scaledVelocity = this.vel.mul(timeScale);
+      this.pos = this.pos.add(scaledVelocity);
+      
+      // Apply a small attraction toward the sun (0,0,0) to prevent drifting
+      const distanceToSun = Math.sqrt(this.pos.x * this.pos.x + this.pos.y * this.pos.y + this.pos.z * this.pos.z);
+      if (distanceToSun > 40) { // Only apply if too far away
+        const sunDirection = new Vector3D(-this.pos.x / distanceToSun, -this.pos.y / distanceToSun, -this.pos.z / distanceToSun);
+        this.pos = this.pos.add(sunDirection.mul(0.01)); // Small constant pull toward sun
+      }
+      
       this.planet.position.set(this.pos.x, this.pos.y, this.pos.z);
       
       // Update label position if it exists
@@ -259,16 +281,16 @@ export class Planet {
     
     // Calculate base orbital velocity (simplified formula for circular orbit)
     // v = sqrt(G * M / r) where G is gravitational constant, M is sun's mass, r is distance
-    const sunMass = 100000000; // From the sun's mass in OrbitalSystem.createSun()
+    const sunMass = 500000000; // From the sun's mass in OrbitalSystem.createSun()
     const baseOrbitalSpeed = Math.sqrt((Planet.grav * sunMass) / distanceFromSun);
     
     // Calculate direction vector from sun to article
     const angle = Math.atan2(posZ, posX);
     
     // Calculate perpendicular direction for tangential velocity
-    // For elliptical orbit, we'll use a factor between 0.7 and 0.9 of the circular velocity
-    // This creates an elliptical orbit rather than a circular one
-    const ellipticalFactor = 0.7 + (Math.random() * 0.2); // Between 0.7 and 0.9
+    // For elliptical orbit, we'll use a factor between 0.3 and 0.5 of the circular velocity
+    // This creates a more stable elliptical orbit with much lower initial velocity
+    const ellipticalFactor = 0.3 + (Math.random() * 0.2); // Between 0.3 and 0.5
     const orbitalSpeed = baseOrbitalSpeed * ellipticalFactor;
     
     // Calculate velocity components perpendicular to radius vector
