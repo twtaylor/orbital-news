@@ -57,6 +57,19 @@ npm install -g pnpm
    pnpm dev:watch
    ```
 
+4. Running tests:
+   ```
+   # Run all tests
+   pnpm test
+   
+   # Run specific Reddit service tests
+   pnpm test:reddit         # Run Jest tests for Reddit service
+   pnpm test:reddit:jest    # Run comprehensive Reddit service tests
+   pnpm test:reddit:js      # Run simple JavaScript test for Reddit API
+   ```
+   
+   The tests verify that the Reddit service can properly fetch and transform articles from Reddit, and that the tier calculation logic works correctly for positioning articles in the orbital system.
+
 ### Frontend Setup (Future)
 
 The frontend will be implemented in a future phase using React and Three.js.
@@ -74,3 +87,36 @@ The application will integrate with the following data sources:
 - Articles positioned based on geographical relevance
 - Article "mass" based on source credibility and length
 - Read/unread article tracking
+
+## Command Reference
+
+### Development Commands
+
+```bash
+# Start the server in development mode
+pnpm dev
+
+# Start the server with auto-reload on file changes
+pnpm dev:watch
+
+# Build the TypeScript project
+pnpm build
+
+# Start the production server (after building)
+pnpm start
+
+# Run ESLint
+pnpm lint
+```
+
+### Test Commands
+
+```bash
+# Run all tests
+pnpm test
+
+# Run specific Reddit service tests
+pnpm test:reddit         # Run Jest tests for Reddit service
+pnpm test:reddit:jest    # Run comprehensive Reddit service tests
+pnpm test:reddit:js      # Run simple JavaScript test for Reddit API
+```

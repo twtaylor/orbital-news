@@ -1,20 +1,32 @@
 import { Article, TierType, determineTier } from '../models/Article';
+import { RedditService } from './redditService';
 
 /**
  * NewsService handles fetching and processing articles from various data sources
  */
 export class NewsService {
+  private redditService: RedditService;
+  
+  constructor() {
+    this.redditService = new RedditService();
+  }
+  
   /**
    * Fetch articles from Reddit
-   * @param query Optional search query
+   * @param subreddit Optional subreddit to fetch from (default: 'news')
+   * @param limit Optional number of articles to fetch (default: 10)
    * @returns Promise with array of articles
    */
-  async fetchFromReddit(query?: string): Promise<Article[]> {
-    // This is a placeholder implementation
-    // In a real implementation, this would use the Reddit API
-    console.log(`Fetching from Reddit with query: ${query || 'none'}`);
-    
-    // Mock data with articles at different orbital distances
+  async fetchFromReddit(subreddit: string = 'news', limit: number = 10): Promise<Article[]> {
+    console.log(`Fetching from Reddit subreddit: ${subreddit}, limit: ${limit}`);
+    return this.redditService.fetchArticles(subreddit, limit);
+  }
+  
+  /**
+   * Get mock data for testing
+   * @returns Array of mock articles
+   */
+  getMockArticles(): Article[] {
     return [
       {
         id: 'reddit-close',
