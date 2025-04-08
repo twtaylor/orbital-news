@@ -121,6 +121,7 @@ export class RedditService {
             
             res.on('end', () => {
               try {
+                console.log('Reddit response:', data);
                 const parsedData = JSON.parse(data);
                 // Transform Reddit posts into our Article format
                 const articles = parsedData.data.children.map((post: any) => 
@@ -129,21 +130,21 @@ export class RedditService {
                 resolve(articles);
               } catch (error) {
                 console.error('Error parsing Reddit data:', error);
-                resolve(this.getMockArticles());
+                resolve([]);
               }
             });
           });
           
           req.on('error', (error) => {
             console.error('Error fetching from Reddit:', error);
-            resolve(this.getMockArticles());
+            resolve([]);
           });
           
           req.end();
         })
         .catch((error) => {
           console.error('Error getting access token:', error);
-          resolve(this.getMockArticles());
+          resolve([]);
         });
     });
   }

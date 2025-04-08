@@ -215,7 +215,8 @@ export class NewsService {
       ]);
       
       // Combine all articles
-      return [...redditArticles, ...twitterArticles, ...wapoArticles];
+      // return [...redditArticles, ...twitterArticles, ...wapoArticles];
+      return [...redditArticles];
     } catch (error) {
       console.error('Error fetching articles:', error);
       throw new Error('Failed to fetch articles from sources');
