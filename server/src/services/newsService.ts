@@ -27,7 +27,7 @@ export class NewsService {
         location: 'Cambridge, MA',
         tags: ['science', 'technology', 'quantum'],
         mass: 120000,
-        position: { x: 5 * Math.cos(0), y: 0.1, z: 5 * Math.sin(0) }, // Close orbit (5 units)
+        position: { x: 10 * Math.cos(0), y: 0.1, z: 10 * Math.sin(0) }, // Close orbit (5 units)
         read: false
       },
       {
@@ -41,7 +41,7 @@ export class NewsService {
         location: 'Cape Canaveral, FL',
         tags: ['space', 'technology', 'spacex'],
         mass: 150000,
-        position: { x: 10 * Math.cos(2), y: -0.2, z: 10 * Math.sin(2) }, // Medium orbit (10 units)
+        position: { x: 20 * Math.cos(2), y: -0.2, z: 20 * Math.sin(2) }, // Medium orbit (10 units)
         read: false
       },
       {
@@ -84,7 +84,7 @@ export class NewsService {
         location: 'San Francisco, CA',
         tags: ['technology', 'business', 'acquisition'],
         mass: 100000,
-        position: { x: 5 * Math.cos(1), y: 0.1, z: 5 * Math.sin(1) }, // Close orbit (5 units)
+        position: { x: 10 * Math.cos(1), y: 0.1, z: 10 * Math.sin(1) }, // Close orbit (5 units)
         read: false
       },
       {
@@ -98,7 +98,7 @@ export class NewsService {
         location: 'Palo Alto, CA',
         tags: ['ai', 'technology', 'research'],
         mass: 130000,
-        position: { x: 10 * Math.cos(3), y: -0.15, z: 10 * Math.sin(3) }, // Medium orbit (10 units)
+        position: { x: 20 * Math.cos(3), y: -0.15, z: 20 * Math.sin(3) }, // Medium orbit (10 units)
         read: false
       },
       {
@@ -141,7 +141,7 @@ export class NewsService {
         location: 'Washington DC',
         tags: ['politics', 'policy', 'legislation'],
         mass: 150000,
-        position: { x: 5 * Math.cos(0.5), y: -0.1, z: 5 * Math.sin(0.5) }, // Close orbit (5 units)
+        position: { x: 10 * Math.cos(0.5), y: -0.1, z: 10 * Math.sin(0.5) }, // Close orbit (5 units)
         read: false
       },
       {
@@ -155,7 +155,7 @@ export class NewsService {
         location: 'New York, NY',
         tags: ['economics', 'inflation', 'markets'],
         mass: 140000,
-        position: { x: 10 * Math.cos(2.5), y: 0.12, z: 10 * Math.sin(2.5) }, // Medium orbit (10 units)
+        position: { x: 20 * Math.cos(2.5), y: 0.12, z: 20 * Math.sin(2.5) }, // Medium orbit (10 units)
         read: false
       },
       {
@@ -188,7 +188,7 @@ export class NewsService {
     // Determine orbital distance tier based on content or source
     // We'll use a simple random selection for now, but this could be based on
     // article relevance, recency, or other factors
-    const distanceTiers = [5, 10, 30]; // Close, medium, and far orbits
+    const distanceTiers = [10, 20, 30]; // Close, medium, and far orbits
     const tierIndex = Math.floor(Math.random() * 3); // 0, 1, or 2
     const baseDistance = distanceTiers[tierIndex];
     
@@ -198,14 +198,24 @@ export class NewsService {
     // Random angle around the sun
     const angle = Math.random() * Math.PI * 2;
     
-    // Keep y values small to maintain a disc-like solar system
-    // but not zero to avoid perfect planar orbits
-    const yVariation = (Math.random() - 0.5) * (baseDistance * 0.05); // Scale y variation with distance
+    // Create more 3D positions with greater y-axis variation
+    // Use a spherical distribution rather than a flat disc
+    // This will create a true 3D orbital system
+    
+    // Calculate elevation angle (angle from the x-z plane)
+    // Use a distribution that favors angles closer to the plane but allows for significant variation
+    const elevationAngle = (Math.random() - 0.5) * Math.PI * 0.6; // -30 to +30 degrees from plane
+    
+    // Calculate y position using the elevation angle
+    const yPosition = distance * Math.sin(elevationAngle);
+    
+    // Calculate x and z with the cosine of the elevation angle to maintain the proper distance
+    const horizontalDistance = distance * Math.cos(Math.abs(elevationAngle));
     
     return {
-      x: distance * Math.cos(angle),
-      y: yVariation,
-      z: distance * Math.sin(angle)
+      x: horizontalDistance * Math.cos(angle),
+      y: yPosition,
+      z: horizontalDistance * Math.sin(angle)
     };
   }
 

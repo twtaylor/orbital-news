@@ -8,12 +8,12 @@ import { Article } from '../types/Article';
 export class Planet {
   // Static properties for the planetary system
   static planets: Planet[] = [];
-  static grav: number = 6.0e-11; // Dramatically increased gravitational constant
+  static grav: number = 2.0e-11; // Reduced gravitational constant for more stable orbits
   static velCap: boolean = true; // Whether to cap velocity
-  static velCapVal: number = 0.04; // Further reduced maximum velocity
+  static velCapVal: number = 0.03; // Further reduced maximum velocity
   static collisionSystem: boolean = false; // Whether to enable collisions
   static currentFollowed?: Planet; // Currently followed planet
-  static eclipticForce: number = 0.001; // Increased force pulling planets toward the ecliptic plane
+  static eclipticForce: number = 0.0002; // Reduced force for more 3D orbits
 
   // Instance properties
   id: string;
@@ -154,15 +154,16 @@ export class Planet {
         }
       }
       
-      // Apply force toward the ecliptic plane (y=0)
-      // This creates a tendency for planets to orbit in the same plane
-      if (Math.abs(this.pos.y) > 0.01) {
+      // Apply a very gentle force toward the ecliptic plane (y=0)
+      // Only for extreme deviations to prevent completely chaotic orbits
+      if (Math.abs(this.pos.y) > this.radius * 10) { // Only apply for significant deviations
         const eclipticForce = new Vector3D(0, -Math.sign(this.pos.y) * Planet.eclipticForce, 0);
         this.vel = this.vel.add(eclipticForce);
       }
       
-      // Apply velocity dampening in the y direction to flatten orbits
-      this.vel.y *= 0.99; // Gradually reduce vertical velocity
+      // Apply minimal velocity dampening in the y direction
+      // Just enough to prevent extreme oscillations
+      this.vel.y *= 0.995; // Very gradually reduce vertical velocity
     }
   }
 
@@ -281,7 +282,7 @@ export class Planet {
     
     // Calculate base orbital velocity (simplified formula for circular orbit)
     // v = sqrt(G * M / r) where G is gravitational constant, M is sun's mass, r is distance
-    const sunMass = 500000000; // From the sun's mass in OrbitalSystem.createSun()
+    const sunMass = 50000000; // From the sun's mass in OrbitalSystem.createSun()
     const baseOrbitalSpeed = Math.sqrt((Planet.grav * sunMass) / distanceFromSun);
     
     // Calculate direction vector from sun to article

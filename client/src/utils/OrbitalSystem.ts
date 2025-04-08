@@ -90,7 +90,7 @@ export class OrbitalSystem {
       'Orbital News',
       0, 0, 0,  // Position
       0, 0, 0,  // Velocity
-      500000000, // Mass - dramatically increased for much stronger gravitational pull
+      50000000, // Mass - reduced for more stable orbits in the 10-20 range
       1,        // Radius
       0xffb300, // Color (yellow-orange)
       true,     // Fixed
