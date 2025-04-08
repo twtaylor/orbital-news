@@ -96,4 +96,24 @@ export class Vector3D {
   toString(): string {
     return `(${this.x.toFixed(2)}, ${this.y.toFixed(2)}, ${this.z.toFixed(2)})`;
   }
+
+  /**
+   * Calculate the cross product with another vector
+   * Returns a vector perpendicular to both this vector and the other vector
+   */
+  cross(v: Vector3D): Vector3D {
+    return new Vector3D(
+      this.y * v.z - this.z * v.y,
+      this.z * v.x - this.x * v.z,
+      this.x * v.y - this.y * v.x
+    );
+  }
+
+  /**
+   * Calculate the dot product with another vector
+   * Returns a scalar representing how parallel the vectors are
+   */
+  dot(v: Vector3D): number {
+    return this.x * v.x + this.y * v.y + this.z * v.z;
+  }
 }

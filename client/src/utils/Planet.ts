@@ -135,44 +135,62 @@ export class Planet {
    */
   updateVelocity(): void {
     if (!this.fixed) {
-      for (let i = 0; i < Planet.planets.length; ++i) {
-        if (Planet.planets[i] !== this) {
-          const forceDir = Planet.planets[i].pos.sub(this.pos).norm();
+      // We'll only apply gravitational force from the sun (first planet)
+      // This simplifies the physics and makes orbits more stable
+      const sun = Planet.planets[0]; // Assuming the sun is always the first planet
+      
+      if (sun && sun !== this) {
+        const forceDir = sun.pos.sub(this.pos).norm();
+        
+        // Calculate distance to the sun
+        const distance = this.pos.dist(sun.pos);
+        
+        // Apply a minimum distance threshold to prevent articles from falling into the sun
+        const effectiveDistance = Math.max(distance, 3.0);
+        
+        // Calculate gravitational force
+        const force = forceDir.mul(
+          (Planet.grav * this.mass * sun.mass) / 
+          (effectiveDistance * effectiveDistance)
+        );
+        
+        // Calculate acceleration
+        const acc = force.div(this.mass);
+        
+        // Calculate angular momentum for current position and velocity
+        const r = this.pos.sub(sun.pos);
+        const angularMomentum = r.cross(this.vel);
+        
+        // Apply acceleration
+        this.vel = this.vel.add(acc);
+        
+        // Apply angular momentum conservation to maintain stable orbits
+        // This helps prevent articles from spiraling in or out
+        if (distance > 5) { // Only apply for articles not too close to sun
+          const newR = this.pos.sub(sun.pos);
+          const newVelTangential = angularMomentum.cross(newR).div(newR.abs() * newR.abs());
           
-          // Calculate distance to prevent articles from getting too close to the sun
-          const distance = this.pos.dist(Planet.planets[i].pos);
-          
-          // Apply a minimum distance threshold to prevent articles from falling into the sun
-          const effectiveDistance = Math.max(distance, 2.5);
-          
-          // Calculate force with dampening factor for slower movement
-          const force = forceDir.mul(
-            (Planet.grav * this.mass * Planet.planets[i].mass) / 
-            (effectiveDistance * effectiveDistance * effectiveDistance) // Cube the distance for more stable orbits
-          );
-          
-          // Apply a dampening factor to slow down movement
-          const dampening = 0.9;
-          const acc = force.div(this.mass).mul(dampening);
-          
-          this.vel = this.vel.add(acc);
-          
-          if (Planet.velCap && this.vel.abs() > Planet.velCapVal) {
-            this.vel = this.vel.max(Planet.velCapVal - 0.001);
-          }
+          // Blend between current velocity and corrected velocity
+          const blendFactor = 0.05; // Small adjustment per frame
+          this.vel = this.vel.mul(1 - blendFactor).add(newVelTangential.mul(blendFactor));
+        }
+        
+        // Apply velocity cap if needed
+        if (Planet.velCap && this.vel.abs() > Planet.velCapVal) {
+          this.vel = this.vel.norm().mul(Planet.velCapVal);
         }
       }
       
       // Apply a very gentle force toward the ecliptic plane (y=0)
       // Only for extreme deviations to prevent completely chaotic orbits
-      if (Math.abs(this.pos.y) > this.radius * 10) { // Only apply for significant deviations
+      if (Math.abs(this.pos.y) > this.radius * 10) {
         const eclipticForce = new Vector3D(0, -Math.sign(this.pos.y) * Planet.eclipticForce, 0);
         this.vel = this.vel.add(eclipticForce);
       }
       
       // Apply minimal velocity dampening in the y direction
       // Just enough to prevent extreme oscillations
-      this.vel.y *= 0.995; // Very gradually reduce vertical velocity
+      this.vel.y *= 0.995;
     }
   }
 
@@ -182,15 +200,40 @@ export class Planet {
   updatePosition(): void {
     if (!this.fixed) {
       // Apply a time factor to speed up the simulation
-      const timeScale = 1.2; // Slightly reduced time scale for more stability
+      const timeScale = 1.2; // Time scale as per user preference
       const scaledVelocity = this.vel.mul(timeScale);
       this.pos = this.pos.add(scaledVelocity);
       
-      // Apply a small attraction toward the sun (0,0,0) to prevent drifting
-      const distanceToSun = Math.sqrt(this.pos.x * this.pos.x + this.pos.y * this.pos.y + this.pos.z * this.pos.z);
-      if (distanceToSun > 40) { // Only apply if too far away
-        const sunDirection = new Vector3D(-this.pos.x / distanceToSun, -this.pos.y / distanceToSun, -this.pos.z / distanceToSun);
-        this.pos = this.pos.add(sunDirection.mul(0.01)); // Small constant pull toward sun
+      // Get the sun
+      const sun = Planet.planets[0]; // Assuming the sun is always the first planet
+      
+      if (sun && sun !== this) {
+        // Calculate distance to the sun
+        const distanceToSun = this.pos.dist(sun.pos);
+        
+        // Enforce minimum distance to sun to prevent falling in
+        if (distanceToSun < 5) {
+          const pushDirection = this.pos.sub(sun.pos).norm();
+          this.pos = sun.pos.add(pushDirection.mul(5));
+          
+          // Also adjust velocity to prevent further approach
+          const radialVelocity = pushDirection.dot(this.vel);
+          if (radialVelocity < 0) { // If moving toward sun
+            this.vel = this.vel.sub(pushDirection.mul(radialVelocity * 1.5)); // Reverse and boost
+          }
+        }
+        
+        // Apply boundary forces to keep articles from drifting too far
+        // This creates a soft boundary that pulls articles back toward the sun
+        const maxDistance = 40; // Maximum allowed distance
+        if (distanceToSun > maxDistance) {
+          const pullDirection = sun.pos.sub(this.pos).norm();
+          const pullStrength = 0.02 * (distanceToSun - maxDistance) / 10;
+          this.pos = this.pos.add(pullDirection.mul(pullStrength));
+          
+          // Also add velocity toward sun
+          this.vel = this.vel.add(pullDirection.mul(0.001));
+        }
       }
       
       this.planet.position.set(this.pos.x, this.pos.y, this.pos.z);
