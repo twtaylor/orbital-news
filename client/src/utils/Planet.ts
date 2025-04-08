@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Vector3D } from './Vector';
 import { Article } from '../types/Article';
+import { OrbitalTier } from '../shared/constants';
 
 /**
  * Planet class representing an article in the orbital system
@@ -8,9 +9,9 @@ import { Article } from '../types/Article';
 export class Planet {
   // Static properties for the planetary system
   static planets: Planet[] = [];
-  static grav: number = 2.0e-11; // Reduced gravitational constant for more stable orbits
+  static grav: number = 6.0e-11; // Dramatically increased gravitational constant
   static velCap: boolean = true; // Whether to cap velocity
-  static velCapVal: number = 0.03; // Further reduced maximum velocity
+  static velCapVal: number = 0.04; // Further reduced maximum velocity
   static collisionSystem: boolean = false; // Whether to enable collisions
   static currentFollowed?: Planet; // Currently followed planet
   static eclipticForce: number = 0.0002; // Reduced force for more 3D orbits
@@ -28,6 +29,14 @@ export class Planet {
   article?: Article;
   planet: THREE.Mesh;
   label?: THREE.Sprite;
+  
+  // Trail properties
+  trailPoints: Vector3D[] = [];
+  trailMaxLength: number = 500; // Maximum number of points in the trail
+  trailUpdateFrequency: number = 5; // Update every N frames
+  trailCounter: number = 0;
+  trailLine?: THREE.Line;
+  trailOpacity: number = 0.4; // Opacity of the trail
 
   /**
    * Create a new planet
@@ -190,6 +199,70 @@ export class Planet {
       if (this.label) {
         this.label.position.set(this.pos.x, this.pos.y + this.radius * 1.5, this.pos.z);
       }
+      
+      // Update trail (only for non-sun objects)
+      if (this.name !== 'Orbital News') {
+        this.updateTrail();
+      }
+    }
+  }
+  
+  /**
+   * Update the trail behind the planet
+   */
+  updateTrail(): void {
+    // Only update trail every N frames to avoid too many points
+    this.trailCounter++;
+    if (this.trailCounter >= this.trailUpdateFrequency) {
+      this.trailCounter = 0;
+      
+      // Add current position to trail points
+      this.trailPoints.push(new Vector3D(this.pos.x, this.pos.y, this.pos.z));
+      
+      // Limit trail length
+      if (this.trailPoints.length > this.trailMaxLength) {
+        this.trailPoints.shift(); // Remove oldest point
+      }
+      
+      // Update or create trail visualization
+      this.updateTrailVisualization();
+    }
+  }
+  
+  /**
+   * Create or update the visual representation of the trail
+   */
+  updateTrailVisualization(): void {
+    // If we have trail points
+    if (this.trailPoints.length > 1) {
+      // Remove existing trail line if it exists
+      if (this.trailLine && this.trailLine.parent) {
+        this.trailLine.parent.remove(this.trailLine);
+      }
+      
+      // Create points for the trail
+      const points = this.trailPoints.map(p => new THREE.Vector3(p.x, p.y, p.z));
+      
+      // Create geometry for the line
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      
+      // Create material with fading effect
+      // Use grey color for black objects so trails are visible
+      const trailColor = this.color === 0x000000 ? 0x666666 : this.color;
+      const material = new THREE.LineBasicMaterial({
+        color: trailColor,
+        transparent: true,
+        opacity: this.trailOpacity,
+        linewidth: 1
+      });
+      
+      // Create the line
+      this.trailLine = new THREE.Line(geometry, material);
+      
+      // Add to the scene
+      if (this.planet.parent) {
+        this.planet.parent.add(this.trailLine);
+      }
     }
   }
 
@@ -205,6 +278,11 @@ export class Planet {
     // Remove the label if it exists
     if (this.label && scene.getObjectById(this.label.id)) {
       scene.remove(this.label);
+    }
+    
+    // Remove the trail if it exists
+    if (this.trailLine && scene.getObjectById(this.trailLine.id)) {
+      scene.remove(this.trailLine);
     }
     
     // Remove from the static list
@@ -272,25 +350,46 @@ export class Planet {
       }
     };
     
-    // Calculate position vector from sun to article
-    const posX = article.position.x;
-    const posY = article.position.y;
-    const posZ = article.position.z;
+    // Get orbital tier constants
     
-    // Calculate distance from the sun (assuming sun is at 0,0,0)
-    const distanceFromSun = Math.sqrt(posX * posX + posZ * posZ);
+    // Get base distance from tier
+    let baseDistance: number;
+    switch (article.tier) {
+      case 'close':
+        baseDistance = OrbitalTier.CLOSE;
+        break;
+      case 'medium':
+        baseDistance = OrbitalTier.MEDIUM;
+        break;
+      case 'far':
+        baseDistance = OrbitalTier.FAR;
+        break;
+      default:
+        baseDistance = OrbitalTier.MEDIUM; // Default to medium if tier is invalid
+    }
+    
+    // Add a small random variation to the base distance (±5%)
+    const distance = baseDistance * (0.95 + Math.random() * 0.1);
+    
+    // Random angle around the sun
+    const angle = Math.random() * Math.PI * 2;
+    
+    // Create 3D positions with elevation angles
+    // Use a spherical distribution for a true 3D orbital system
+    const elevationAngle = (Math.random() - 0.5) * Math.PI * 0.6; // -30 to +30 degrees from plane
+    
+    // Calculate position components using spherical coordinates
+    const horizontalDistance = distance * Math.cos(Math.abs(elevationAngle));
+    const posX = horizontalDistance * Math.cos(angle);
+    const posY = distance * Math.sin(elevationAngle);
+    const posZ = horizontalDistance * Math.sin(angle);
     
     // Calculate base orbital velocity (simplified formula for circular orbit)
     // v = sqrt(G * M / r) where G is gravitational constant, M is sun's mass, r is distance
     const sunMass = 50000000; // From the sun's mass in OrbitalSystem.createSun()
-    const baseOrbitalSpeed = Math.sqrt((Planet.grav * sunMass) / distanceFromSun);
+    const baseOrbitalSpeed = Math.sqrt((Planet.grav * sunMass) / distance);
     
-    // Calculate direction vector from sun to article
-    const angle = Math.atan2(posZ, posX);
-    
-    // Calculate perpendicular direction for tangential velocity
-    // For elliptical orbit, we'll use a factor between 0.3 and 0.5 of the circular velocity
-    // This creates a more stable elliptical orbit with much lower initial velocity
+    // For elliptical orbit, use a factor between 0.3 and 0.5 of the circular velocity
     const ellipticalFactor = 0.3 + (Math.random() * 0.2); // Between 0.3 and 0.5
     const orbitalSpeed = baseOrbitalSpeed * ellipticalFactor;
     
@@ -299,7 +398,6 @@ export class Planet {
     const velZ = orbitalSpeed * Math.cos(angle);
     
     // Add a small random vertical velocity component for variety
-    // This will create slightly inclined orbits
     const velY = (Math.random() - 0.5) * 0.01;
 
     // Create a new planet

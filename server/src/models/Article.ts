@@ -2,11 +2,11 @@
  * Article model representing a news article in the solar system
  */
 
-export interface Position {
-  x: number; // X coordinate in AU
-  y: number; // Y coordinate in AU
-  z: number; // Z coordinate in AU
-}
+// Import orbital tier constants
+import { OrbitalTier } from '../shared/constants';
+
+// Define valid tier types
+export type TierType = 'close' | 'medium' | 'far';
 
 export interface Article {
   id: string;
@@ -19,7 +19,7 @@ export interface Article {
   location: string; // Geographic location the article relates to
   tags?: string[];
   mass: number; // Based on source credibility and article length
-  position: Position; // Position in the solar system (in AU)
+  tier: TierType; // Orbital tier (close, medium, far)
   read: boolean;
 }
 
@@ -33,25 +33,27 @@ export const calculateArticleMass = (
   return sourceCredibility * (contentLength / 10);
 };
 
-// Calculate initial position based on relevance to user location
-export const calculateInitialPosition = (
-  distanceFromUser: number, // In km
-  userZipCode: string
-): Position => {
+// Determine tier based on article properties
+export const determineTier = (
+  source: string,
+  publishedAt: string,
+  contentLength: number
+): TierType => {
   // This is a placeholder implementation
   // In a real implementation, this would use more sophisticated logic
-  // to determine the position based on the user's location and the article's relevance
+  // based on the article's source, publication date, and content length
   
-  // Convert distance to AU (1 AU = ~150 million km)
-  // This is just for visualization purposes, not actual astronomical accuracy
-  const distanceInAU = Math.min(Math.max(distanceFromUser / 1000000, 0.5), 10);
+  // Determine tier based on publication date (newer = closer)
+  const pubDate = new Date(publishedAt);
+  const now = new Date();
+  const daysDifference = (now.getTime() - pubDate.getTime()) / (1000 * 3600 * 24);
   
-  // Generate a position on a roughly circular orbit at the calculated distance
-  const angle = Math.random() * Math.PI * 2;
-  
-  return {
-    x: distanceInAU * Math.cos(angle),
-    y: 0, // Keeping articles roughly on the ecliptic plane
-    z: distanceInAU * Math.sin(angle)
-  };
+  // Determine tier based on recency
+  if (daysDifference < 1) { // Less than 1 day old
+    return 'close';
+  } else if (daysDifference < 3) { // 1-3 days old
+    return 'medium';
+  } else { // More than 3 days old
+    return 'far';
+  }
 };

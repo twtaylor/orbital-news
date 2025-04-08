@@ -1,4 +1,4 @@
-import { Article, Position } from '../models/Article';
+import { Article, TierType, determineTier } from '../models/Article';
 
 /**
  * NewsService handles fetching and processing articles from various data sources
@@ -27,7 +27,7 @@ export class NewsService {
         location: 'Cambridge, MA',
         tags: ['science', 'technology', 'quantum'],
         mass: 120000,
-        position: { x: 10 * Math.cos(0), y: 0.1, z: 10 * Math.sin(0) }, // Close orbit (5 units)
+        tier: 'close',
         read: false
       },
       {
@@ -41,7 +41,7 @@ export class NewsService {
         location: 'Cape Canaveral, FL',
         tags: ['space', 'technology', 'spacex'],
         mass: 150000,
-        position: { x: 20 * Math.cos(2), y: -0.2, z: 20 * Math.sin(2) }, // Medium orbit (10 units)
+        tier: 'medium',
         read: false
       },
       {
@@ -55,7 +55,7 @@ export class NewsService {
         location: 'Chile',
         tags: ['astronomy', 'exoplanet', 'science'],
         mass: 180000,
-        position: { x: 30 * Math.cos(4), y: 0.3, z: 30 * Math.sin(4) }, // Far orbit (30 units)
+        tier: 'far',
         read: false
       }
     ];
@@ -84,7 +84,7 @@ export class NewsService {
         location: 'San Francisco, CA',
         tags: ['technology', 'business', 'acquisition'],
         mass: 100000,
-        position: { x: 10 * Math.cos(1), y: 0.1, z: 10 * Math.sin(1) }, // Close orbit (5 units)
+        tier: 'close',
         read: false
       },
       {
@@ -98,7 +98,7 @@ export class NewsService {
         location: 'Palo Alto, CA',
         tags: ['ai', 'technology', 'research'],
         mass: 130000,
-        position: { x: 20 * Math.cos(3), y: -0.15, z: 20 * Math.sin(3) }, // Medium orbit (10 units)
+        tier: 'medium',
         read: false
       },
       {
@@ -112,7 +112,7 @@ export class NewsService {
         location: 'Geneva, Switzerland',
         tags: ['climate', 'environment', 'science'],
         mass: 160000,
-        position: { x: 30 * Math.cos(5), y: 0.25, z: 30 * Math.sin(5) }, // Far orbit (30 units)
+        tier: 'far',
         read: false
       }
     ];
@@ -141,7 +141,7 @@ export class NewsService {
         location: 'Washington DC',
         tags: ['politics', 'policy', 'legislation'],
         mass: 150000,
-        position: { x: 10 * Math.cos(0.5), y: -0.1, z: 10 * Math.sin(0.5) }, // Close orbit (5 units)
+        tier: 'close',
         read: false
       },
       {
@@ -155,7 +155,7 @@ export class NewsService {
         location: 'New York, NY',
         tags: ['economics', 'inflation', 'markets'],
         mass: 140000,
-        position: { x: 20 * Math.cos(2.5), y: 0.12, z: 20 * Math.sin(2.5) }, // Medium orbit (10 units)
+        tier: 'medium',
         read: false
       },
       {
@@ -169,54 +169,22 @@ export class NewsService {
         location: 'Brussels, Belgium',
         tags: ['international', 'diplomacy', 'politics'],
         mass: 170000,
-        position: { x: 30 * Math.cos(5.5), y: -0.2, z: 30 * Math.sin(5.5) }, // Far orbit (30 units)
+        tier: 'far',
         read: false
       }
     ];
   }
 
   /**
-   * Calculate the initial position of an article based on its location and the user's location
-   * @param articleLocation The location the article is about
-   * @param userZipCode The user's zip code
-   * @returns Position object with coordinates in AU
+   * This method is no longer used as we've switched to a tier-based approach
+   * Kept for reference only
    */
-  calculatePosition(articleLocation: string, userZipCode: string): Position {
-    // This is a placeholder implementation
-    // In a real implementation, this would use geocoding to determine distances
-    
-    // Determine orbital distance tier based on content or source
-    // We'll use a simple random selection for now, but this could be based on
-    // article relevance, recency, or other factors
-    const distanceTiers = [10, 20, 30]; // Close, medium, and far orbits
-    const tierIndex = Math.floor(Math.random() * 3); // 0, 1, or 2
-    const baseDistance = distanceTiers[tierIndex];
-    
-    // Add a small random variation to the base distance (±10%)
-    const distance = baseDistance * (0.9 + Math.random() * 0.2);
-    
-    // Random angle around the sun
-    const angle = Math.random() * Math.PI * 2;
-    
-    // Create more 3D positions with greater y-axis variation
-    // Use a spherical distribution rather than a flat disc
-    // This will create a true 3D orbital system
-    
-    // Calculate elevation angle (angle from the x-z plane)
-    // Use a distribution that favors angles closer to the plane but allows for significant variation
-    const elevationAngle = (Math.random() - 0.5) * Math.PI * 0.6; // -30 to +30 degrees from plane
-    
-    // Calculate y position using the elevation angle
-    const yPosition = distance * Math.sin(elevationAngle);
-    
-    // Calculate x and z with the cosine of the elevation angle to maintain the proper distance
-    const horizontalDistance = distance * Math.cos(Math.abs(elevationAngle));
-    
-    return {
-      x: horizontalDistance * Math.cos(angle),
-      y: yPosition,
-      z: horizontalDistance * Math.sin(angle)
-    };
+  _legacyCalculatePosition(articleLocation: string, userZipCode: string): void {
+    // This method is no longer used
+    // We now use the determineTier function to assign a tier to each article
+    // The frontend will calculate the actual position based on the tier
+    console.log('Legacy method called - should not be used');
+    return;
   }
 
   /**

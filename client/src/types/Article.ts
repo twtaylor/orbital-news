@@ -1,4 +1,9 @@
 /**
+ * Tier type representing the orbital distance from the sun
+ */
+export type TierType = 'close' | 'medium' | 'far';
+
+/**
  * Position interface representing coordinates in 3D space
  */
 export interface Position {
@@ -21,7 +26,7 @@ export interface Article {
   location: string; // Geographic location the article relates to
   tags?: string[];
   mass: number; // Based on source credibility and article length
-  position: Position; // Position in the solar system (in AU)
+  tier: TierType; // Orbital tier (close, medium, far)
   read: boolean;
 }
 
