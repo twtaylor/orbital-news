@@ -1,4 +1,5 @@
-import { Article, TierType, determineTier } from '../models/Article';
+import { determineTier } from '../models/Article';
+import { Article, TierType } from '../types/models/article.type';
 import { RedditService } from './redditService';
 
 /**

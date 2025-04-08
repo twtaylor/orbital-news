@@ -76,8 +76,8 @@ The frontend will be implemented in a future phase using React and Three.js.
 
 ## Data Sources
 
-The application will integrate with the following data sources:
-- Reddit
+The application integrates with the following data sources:
+- Reddit (using node-fetch for API requests)
 - Twitter
 - Washington Post
 

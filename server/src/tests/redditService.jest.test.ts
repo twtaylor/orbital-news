@@ -1,5 +1,5 @@
 import { RedditService } from '../services/redditService';
-import { Article, TierType } from '../models/Article';
+import { Article, TierType } from '../types/models/article.type';
 // Import Jest types
 import 'jest';
 

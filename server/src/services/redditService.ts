@@ -1,6 +1,7 @@
-import * as https from 'https';
-import { Article, TierType } from '../models/Article';
 import * as dotenv from 'dotenv';
+import fetch from 'node-fetch';
+import { Article, TierType } from '../types/models/article.type';
+import { RedditTokenResponse, RedditPost, RedditPostData } from '../types/services/reddit.type';
 
 // Load environment variables
 dotenv.config();
@@ -29,60 +30,48 @@ export class RedditService {
    * Get an OAuth access token for the Reddit API
    * @returns Access token
    */
-  private getAccessToken(): Promise<string> {
-    return new Promise((resolve, reject) => {
-      // Return existing token if it's still valid
-      if (this.accessToken && Date.now() < this.tokenExpiry) {
-        return resolve(this.accessToken);
-      }
-      
-      // If credentials are missing, use mock data
-      if (!this.clientId || !this.clientSecret) {
-        console.warn('Reddit API credentials not found');
-        return reject(new Error('Reddit API credentials not found'));
-      }
+  private async getAccessToken(): Promise<string> {
+    // Return existing token if it's still valid
+    if (this.accessToken && Date.now() < this.tokenExpiry) {
+      return this.accessToken;
+    }
+    
+    // If credentials are missing, throw error
+    if (!this.clientId || !this.clientSecret) {
+      console.warn('Reddit API credentials not found');
+      throw new Error('Reddit API credentials not found');
+    }
 
+    try {
       // Create auth string for Basic Auth
       const authString = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
       
-      const options = {
-        hostname: 'www.reddit.com',
-        path: '/api/v1/access_token',
+      // Make request to Reddit API
+      const response = await fetch('https://www.reddit.com/api/v1/access_token', {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${authString}`,
           'Content-Type': 'application/x-www-form-urlencoded',
           'User-Agent': this.userAgent
-        }
-      };
-      
-      const req = https.request(options, (res) => {
-        let data = '';
-        
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        
-        res.on('end', () => {
-          try {
-            const parsedData = JSON.parse(data);
-            this.accessToken = parsedData.access_token;
-            // Set expiry time (typically 1 hour for Reddit tokens)
-            this.tokenExpiry = Date.now() + (parsedData.expires_in * 1000);
-            resolve(this.accessToken || '');
-          } catch (error) {
-            reject(error);
-          }
-        });
+        },
+        body: 'grant_type=client_credentials'
       });
       
-      req.on('error', (error) => {
-        reject(error);
-      });
+      if (!response.ok) {
+        throw new Error(`Reddit API error: ${response.status} ${response.statusText}`);
+      }
       
-      req.write('grant_type=client_credentials');
-      req.end();
-    });
+      const data = await response.json() as RedditTokenResponse;
+      
+      // Store token and expiry
+      this.accessToken = data.access_token;
+      this.tokenExpiry = Date.now() + (data.expires_in * 1000);
+      
+      return this.accessToken || '';
+    } catch (error) {
+      console.error('Error getting Reddit access token:', error);
+      throw error;
+    }
   }
 
   /**
@@ -92,61 +81,43 @@ export class RedditService {
    * @param timeframe Time frame for posts (default: 'day')
    * @returns Promise with array of articles
    */
-  fetchArticles(subreddit: string = 'news', limit: number = 10, timeframe: string = 'day'): Promise<Article[]> {
-    return new Promise((resolve) => {
-      // Use mock data if credentials aren't available
-      if (!this.clientId || !this.clientSecret) {
-        console.log('Using mock Reddit data (no API credentials)');
-        return resolve(this.getMockArticles());
-      }
+  async fetchArticles(subreddit: string = 'news', limit: number = 10, timeframe: string = 'day'): Promise<Article[]> {
+    // Use mock data if credentials aren't available
+    if (!this.clientId || !this.clientSecret) {
+      console.log('Using mock Reddit data (no API credentials)');
+      return this.getMockArticles();
+    }
 
-      this.getAccessToken()
-        .then((token) => {
-          const options = {
-            hostname: 'oauth.reddit.com',
-            path: `/r/${subreddit}/top.json?limit=${limit}&t=${timeframe}`,
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'User-Agent': this.userAgent
-            }
-          };
-          
-          const req = https.request(options, (res) => {
-            let data = '';
-            
-            res.on('data', (chunk) => {
-              data += chunk;
-            });
-            
-            res.on('end', () => {
-              try {
-                console.log('Reddit response:', data);
-                const parsedData = JSON.parse(data);
-                // Transform Reddit posts into our Article format
-                const articles = parsedData.data.children.map((post: any) => 
-                  this.transformRedditPost(post.data)
-                );
-                resolve(articles);
-              } catch (error) {
-                console.error('Error parsing Reddit data:', error);
-                resolve([]);
-              }
-            });
-          });
-          
-          req.on('error', (error) => {
-            console.error('Error fetching from Reddit:', error);
-            resolve([]);
-          });
-          
-          req.end();
-        })
-        .catch((error) => {
-          console.error('Error getting access token:', error);
-          resolve([]);
-        });
-    });
+    try {
+      // Get access token
+      const token = await this.getAccessToken();
+      
+      // Fetch posts from Reddit
+      const response = await fetch(
+        `https://oauth.reddit.com/r/${subreddit}/top.json?limit=${limit}&t=${timeframe}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'User-Agent': this.userAgent
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Reddit API error: ${response.status} ${response.statusText}`);
+      }
+      
+      // Parse response
+      const data = await response.json() as RedditPostData;
+      console.log('Reddit response:', JSON.stringify(data));
+      
+      // Transform Reddit posts into our Article format
+      return data.data.children.map(post => this.transformRedditPost(post.data));
+    } catch (error) {
+      console.error('Error fetching from Reddit:', error);
+      return [];
+    }
   }
 
   /**
@@ -154,7 +125,7 @@ export class RedditService {
    * @param post Reddit post data
    * @returns Article object
    */
-  private transformRedditPost(post: any): Article {
+  private transformRedditPost(post: RedditPost): Article {
     // Calculate a "mass" based on score and number of comments
     const mass = (post.score + (post.num_comments * 2)) * 1000;
     const cappedMass = Math.max(10000, Math.min(500000, mass)); // Limit mass between 10k and 500k

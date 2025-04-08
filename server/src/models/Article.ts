@@ -1,27 +1,13 @@
 /**
- * Article model representing a news article in the solar system
+ * Article model utility functions
  */
 
-// Import orbital tier constants
+// Import orbital tier constants and types
 import { OrbitalTier } from '../shared/constants';
+import { Article, TierType } from '../types/models/article.type';
 
-// Define valid tier types
-export type TierType = 'close' | 'medium' | 'far';
-
-export interface Article {
-  id: string;
-  title: string;
-  content: string;
-  source: string;
-  sourceUrl?: string;
-  author?: string;
-  publishedAt: string;
-  location: string; // Geographic location the article relates to
-  tags?: string[];
-  mass: number; // Based on source credibility and article length
-  tier: TierType; // Orbital tier (close, medium, far)
-  read: boolean;
-}
+// Re-export types for backward compatibility
+export { Article, TierType };
 
 // Calculate article mass based on source credibility and length
 export const calculateArticleMass = (

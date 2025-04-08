@@ -8,8 +8,14 @@
     "dev": "ts-node src/index.ts",
     "dev:watch": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
+    "clean": "rm -rf dist",
+    "rebuild": "pnpm clean && pnpm build",
     "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:services": "jest src/tests/services",
     "test:reddit": "jest src/tests/redditService.test.ts",
     "test:reddit:jest": "jest src/tests/redditService.jest.test.ts",
     "test:reddit:js": "node src/tests/redditServiceTest.js"
@@ -23,9 +29,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/node-fetch": "^2.6.12",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
+    "node-fetch": "2",
     "pg": "^8.14.1"
   },
   "devDependencies": {

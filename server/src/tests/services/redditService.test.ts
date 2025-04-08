@@ -1,5 +1,5 @@
-import { RedditService } from '../services/redditService';
-import { Article, TierType } from '../types/models/article.type';
+import { RedditService } from '../../services/redditService';
+import { Article, TierType } from '../../types/models/article.type';
 import * as dotenv from 'dotenv';
 import 'jest';
 
