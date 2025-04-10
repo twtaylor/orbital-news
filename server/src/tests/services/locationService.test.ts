@@ -2,6 +2,9 @@ import { LocationService } from '../../services/locationService';
 import { Article } from '../../types/models/article.type';
 import 'jest';
 
+// Set longer timeout for all tests in this suite due to API calls
+jest.setTimeout(30000);
+
 describe('LocationService', () => {
   let locationService: LocationService;
 

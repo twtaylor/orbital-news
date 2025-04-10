@@ -6,6 +6,9 @@ import 'jest';
  * End-to-end test for the RedditService
  * This test verifies the complete flow from fetching articles to location extraction
  */
+// Set longer timeout for all tests in this suite due to API calls
+jest.setTimeout(30000);
+
 describe('RedditService E2E', () => {
   let redditService: RedditService;
   
@@ -44,7 +47,7 @@ describe('RedditService E2E', () => {
     
     // Test should pass even if location is "Global" (the default)
     // but we log it for manual inspection
-  }, 15000); // Increase timeout for API calls and location extraction
+  }, 25000); // Increase timeout for API calls and location extraction
   
   it('should extract location from mock article with known location mentions', async () => {
     // Use getMockArticles which should extract locations from the content

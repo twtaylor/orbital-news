@@ -1,14 +1,17 @@
 import nlp from 'compromise';
 import fetch from 'node-fetch';
-import { Article } from '../types/models/article.type';
+import { Article, TierType } from '../types/models/article.type';
 import { 
   Location, 
   LocationExtractionResult,
   LocationExtractionOptions 
 } from '../types/services/location.type';
+import { GeocodingService } from './geocodingService';
+import { Coordinates } from '../types/services/geocoding.type';
 
 /**
  * Service for extracting location information from article content
+ * and determining article tiers based on geographic distance
  */
 export class LocationService {
   // Common location words to exclude (lowercase)
@@ -27,13 +30,37 @@ export class LocationService {
     'japan', 'india', 'australia', 'russia', 'brazil'
     // Add more as needed
   ]);
+  
+  // Geocoding service for location coordinates and distance calculation
+  private geocodingService: GeocodingService;
+  
+  /**
+   * Initialize the LocationService
+   * @param userLocation Optional user location coordinates
+   * @param userZipCode Optional user ZIP code (takes precedence over coordinates)
+   */
+  constructor(userLocation?: Coordinates, userZipCode?: string) {
+    // Initialize geocoding service with default settings
+    this.geocodingService = new GeocodingService();
+    
+    // Set user location if provided
+    if (userLocation) {
+      this.geocodingService.setUserLocation(userLocation);
+    }
+    
+    // Set user location by ZIP code if provided (takes precedence)
+    if (userZipCode) {
+      this.geocodingService.setUserLocationByZipCode(userZipCode)
+        .catch(error => console.error('Error setting user location by ZIP code:', error));
+    }
+  }
 
   /**
-   * Extract location information from an article
+   * Extract location information from an article and determine its tier based on distance
    * 
    * @param article The article to analyze
    * @param options Options for location extraction
-   * @returns Location extraction result
+   * @returns Location extraction result with distance-based tier
    */
   async extractLocations(
     article: Article, 
@@ -82,12 +109,38 @@ export class LocationService {
       // Left as a placeholder for future implementation
     }
     
+    // Calculate distance and determine tier if we have a primary location
+    let distanceResult = undefined;
+    let tier = undefined;
+    
+    if (primaryLocation && primaryLocation.name) {
+      try {
+        // Use the geocoding service to calculate distance from user location
+        const geoResult = await this.geocodingService.calculateDistanceFromUser(primaryLocation.name);
+        
+        if (geoResult) {
+          distanceResult = {
+            distanceInMeters: geoResult.distanceInMeters,
+            distanceInKilometers: geoResult.distanceInKilometers,
+            distanceInMiles: geoResult.distanceInMiles
+          };
+          
+          tier = geoResult.tier;
+          console.log(`Distance-based tier for "${primaryLocation.name}": ${tier} (${geoResult.distanceInKilometers.toFixed(2)} km)`);
+        }
+      } catch (error) {
+        console.error('Error calculating distance for location:', error);
+      }
+    }
+    
     return {
       primaryLocation,
       allLocations: filteredLocations,
       analyzedText: textToAnalyze,
       textLength: textToAnalyze.length,
-      processingTimeMs: Date.now() - startTime
+      processingTimeMs: Date.now() - startTime,
+      distanceResult,
+      tier
     };
   }
   
@@ -226,5 +279,34 @@ export class LocationService {
         return word.charAt(0).toUpperCase() + word.slice(1);
       })
       .join(' ');
+  }
+
+  /**
+   * Set the user's ZIP code for location relevance calculations
+   * @param zipCode User's ZIP code
+   * @returns Promise that resolves when the location is set
+   */
+  async setUserZipCode(zipCode: string): Promise<boolean> {
+    try {
+      const result = await this.geocodingService.setUserLocationByZipCode(zipCode);
+      if (result) {
+        console.log(`Set user location to ZIP code ${zipCode} for distance calculations`);
+      } else {
+        console.warn(`Failed to set user location to ZIP code ${zipCode}`);
+      }
+      return result;
+    } catch (error) {
+      console.error('Error setting user ZIP code:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Set the user's coordinates for location relevance calculations
+   * @param coordinates User's coordinates
+   */
+  setUserCoordinates(coordinates: Coordinates): void {
+    this.geocodingService.setUserLocation(coordinates);
+    console.log(`Set user coordinates to ${coordinates.latitude}, ${coordinates.longitude} for distance calculations`);
   }
 }

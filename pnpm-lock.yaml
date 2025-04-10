@@ -106,9 +106,15 @@ importers:
       express:
         specifier: ^4.18.2
         version: 4.21.2
+      geolib:
+        specifier: ^3.3.4
+        version: 3.3.4
       node-fetch:
         specifier: '2'
         version: 2.7.0
+      node-geocoder:
+        specifier: ^4.4.1
+        version: 4.4.1
       pg:
         specifier: ^8.14.1
         version: 8.14.1
@@ -993,6 +999,9 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
+  bluebird@3.7.2:
+    resolution: {integrity: sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==}
+
   body-parser@1.20.3:
     resolution: {integrity: sha512-7rAxByjUMqQ3/bHJy7D6OGXvx/MMc4IqBn/X0fcM1QUcAItpZrBEYhWGem+tzXH90c+G01ypMcYJBO9Y30203g==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
@@ -1435,6 +1444,9 @@ packages:
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
     engines: {node: '>=6.9.0'}
+
+  geolib@3.3.4:
+    resolution: {integrity: sha512-EicrlLLL3S42gE9/wde+11uiaYAaeSVDwCUIv2uMIoRBfNJCn8EsSI+6nS3r4TCKDO6+RQNM9ayLq2at+oZQWQ==}
 
   get-caller-file@2.0.5:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
@@ -1926,6 +1938,10 @@ packages:
     peerDependenciesMeta:
       encoding:
         optional: true
+
+  node-geocoder@4.4.1:
+    resolution: {integrity: sha512-krx50Gxl4yBgMBhfUhOuNwStzLi+gAYaa46gs0e+ftTvaqLsjKYDFVxC8ff6RLc2f11Gp7Y+R1mkzwsE2c0chw==}
+    engines: {node: '>=18'}
 
   node-int64@0.4.0:
     resolution: {integrity: sha512-O5lz91xSOeoXP6DulyHfllpq+Eg00MWitZIbtPfoSEvqIHdl5gfcY6hYzDWnj0qD5tz52PI08u9qUvSVeUBeHw==}
@@ -3513,6 +3529,8 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
+  bluebird@3.7.2: {}
+
   body-parser@1.20.3:
     dependencies:
       bytes: 3.1.2
@@ -4015,6 +4033,8 @@ snapshots:
   function-bind@1.1.2: {}
 
   gensync@1.0.0-beta.2: {}
+
+  geolib@3.3.4: {}
 
   get-caller-file@2.0.5: {}
 
@@ -4642,6 +4662,13 @@ snapshots:
   node-fetch@2.7.0:
     dependencies:
       whatwg-url: 5.0.0
+
+  node-geocoder@4.4.1:
+    dependencies:
+      bluebird: 3.7.2
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
 
   node-int64@0.4.0: {}
 

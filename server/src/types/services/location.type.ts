@@ -49,6 +49,16 @@ export interface LocationExtractionResult {
   
   /** Processing time in milliseconds */
   processingTimeMs?: number;
+  
+  /** Distance calculation result */
+  distanceResult?: {
+    distanceInMeters: number;
+    distanceInKilometers: number;
+    distanceInMiles: number;
+  };
+  
+  /** Tier based on distance from user location */
+  tier?: string;
 }
 
 /**
