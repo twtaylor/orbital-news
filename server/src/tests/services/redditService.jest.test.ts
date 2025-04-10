@@ -72,7 +72,7 @@ describe('RedditService', () => {
     });
   });
   
-  it('should transform Reddit posts into articles', () => {
+  it('should transform Reddit posts into articles', async () => {
     // Create mock Reddit post data
     const lowMassPost = {
       id: 'test1',
@@ -100,9 +100,9 @@ describe('RedditService', () => {
       total_awards_received: 5
     };
     
-    // Transform the posts using the private method
-    const lowMassArticle = (redditService as any).transformRedditPost(lowMassPost);
-    const highMassArticle = (redditService as any).transformRedditPost(highMassPost);
+    // Transform the posts using the private method (now async)
+    const lowMassArticle = await (redditService as any).transformRedditPost(lowMassPost);
+    const highMassArticle = await (redditService as any).transformRedditPost(highMassPost);
     
     // Verify the transformation
     expect(lowMassArticle.id).toBe('reddit-test1');
@@ -124,7 +124,7 @@ describe('RedditService', () => {
     });
   });
   
-  it('should provide mock articles when credentials are missing', () => {
+  it('should provide mock articles when credentials are missing', async () => {
     // Create a new instance with empty credentials
     const mockRedditService = new RedditService();
     
@@ -133,22 +133,27 @@ describe('RedditService', () => {
     (mockRedditService as any).clientSecret = '';
     
     // Fetch articles (should return mock data)
-    return mockRedditService.fetchArticles().then((articles: Article[]) => {
-      // Verify we got mock articles
-      expect(Array.isArray(articles)).toBe(true);
-      expect(articles.length).toBeGreaterThan(0);
-      
-      // Check the first mock article
-      const mockArticle = articles[0];
-      expect(mockArticle.id).toContain('mock');
-      
-      // Log the mock article for debugging
-      console.log('Successfully fetched mock article:', {
-        id: mockArticle.id,
-        title: mockArticle.title,
-        tier: mockArticle.tier,
-        mass: mockArticle.mass
-      });
+    const articles = await mockRedditService.fetchArticles();
+    
+    // Verify we got mock articles
+    expect(Array.isArray(articles)).toBe(true);
+    expect(articles.length).toBeGreaterThan(0);
+    
+    // Check the first mock article
+    const mockArticle = articles[0];
+    expect(mockArticle.id).toContain('mock');
+    
+    // Verify location was extracted
+    expect(mockArticle.location).toBeDefined();
+    expect(mockArticle.location.length).toBeGreaterThan(0);
+    
+    // Log the mock article for debugging
+    console.log('Successfully fetched mock article:', {
+      id: mockArticle.id,
+      title: mockArticle.title,
+      tier: mockArticle.tier,
+      mass: mockArticle.mass,
+      location: mockArticle.location
     });
   });
 });
