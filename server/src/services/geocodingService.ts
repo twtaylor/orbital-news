@@ -29,8 +29,8 @@ export class GeocodingService {
    */
   constructor(
     options: GeocodingOptions = {}, 
-    tierThresholds: TierThresholds = { close: 100, medium: 1000 },
-    defaultUserLocation: Coordinates = { latitude: 37.7749, longitude: -122.4194 } // San Francisco
+    tierThresholds: TierThresholds = { close: 240, medium: 1600 }, // 0-150 miles, 151-1000 miles, >1000 miles
+    defaultUserLocation: Coordinates = { latitude: 35.4676, longitude: -97.5164 } // Oklahoma City (central US)
   ) {
     // Default to OpenStreetMap if no provider specified (doesn't require API key)
     const geocoderOptions: NodeGeocoder.Options = {
@@ -56,7 +56,7 @@ export class GeocodingService {
         return null;
       }
 
-      console.log(`Geocoding location: ${locationName}`);
+      // No special logging
       const results = await this.geocoder.geocode(locationName);
 
       if (results && results.length > 0) {
@@ -77,7 +77,7 @@ export class GeocodingService {
       
       return null;
     } catch (error) {
-      console.error('Error geocoding location:', error);
+      // console.error('Error geocoding location:', error);
       return null;
     }
   }
@@ -130,7 +130,7 @@ export class GeocodingService {
         tier
       };
     } catch (error) {
-      console.error('Error calculating distance:', error);
+      // console.error('Error calculating distance:', error);
       return null;
     }
   }

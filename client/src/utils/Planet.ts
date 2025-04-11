@@ -379,17 +379,17 @@ export class Planet {
    * Create a planet from an article
    */
   static fromArticle(article: Article, scene: THREE.Scene): Planet {
-    // Generate a color based on the article source
-    const getColorFromSource = (source: string): number => {
-      switch (source.toLowerCase()) {
-        case 'reddit':
-          return 0xff4500; // Reddit orange
-        case 'twitter':
-          return 0x1da1f2; // Twitter blue
-        case 'washington_post':
-          return 0x000000; // Black
+    // Get color based on tier instead of source
+    const getColorFromTier = (tier: string): number => {
+      switch (tier) {
+        case 'close':
+          return 0x00ff00; // Green for close
+        case 'medium':
+          return 0x0000ff; // Blue for medium
+        case 'far':
+          return 0xff0000; // Red for far
         default:
-          return 0xffffff; // White
+          return 0xffffff; // White for unknown tier
       }
     };
     
@@ -455,7 +455,7 @@ export class Planet {
       velZ, // Initial tangential velocity z
       article.mass,
       Math.max(0.1, Math.min(0.5, article.mass / 200000)), // Scale radius based on mass
-      getColorFromSource(article.source),
+      getColorFromTier(article.tier),
       false, // Not fixed
       false, // Not followed
       article

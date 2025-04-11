@@ -147,44 +147,53 @@ export class RedditService {
     const mass = (post.score + (post.num_comments * 2)) * 1000;
     const cappedMass = Math.max(10000, Math.min(500000, mass)); // Limit mass between 10k and 500k
     
-    // Determine tier based on mass
-    const tier = this.determineTierFromMass(cappedMass);
+    // Determine initial tier based on mass (will be overridden by location-based tier if available)
+    const massTier = this.determineTierFromMass(cappedMass);
     
     // Default location from post flair
     let location = post.link_flair_text || "";
     
-    // Create the base article
+    // Create the base article with mass-based tier as fallback
     const article: Article = {
       id: `reddit-${post.id}`,
       title: post.title,
-      content: post.selftext || post.url,
+      content: post.selftext || '',
       source: 'reddit',
-      sourceUrl: `https://reddit.com${post.permalink}`,
+      sourceUrl: post.url,
       author: post.author,
       publishedAt: new Date(post.created_utc * 1000).toISOString(),
       location,
       mass: cappedMass,
-      tier,
+      tier: massTier, // Will be updated if location-based tier is available
       read: false
     };
     
-    // Try to extract location information if not already provided by flair
-    if (!location) {
-      try {
-        // Extract location from title and content
-        const locationResult = await this.locationService.extractLocations(article, {
-          fetchFullContent: false,  // Don't fetch full content for performance
-          minConfidence: 0.4        // Require reasonable confidence
-        });
-        
-        // Set the location if we found one with reasonable confidence
-        if (locationResult.primaryLocation && locationResult.primaryLocation.confidence >= 0.4) {
-          article.location = locationResult.primaryLocation.name;
-        } else {
-          article.location = "Global"; // Default if no location found
-        }
-      } catch (error) {
-        console.warn(`Failed to extract location for article ${article.id}: ${error}`);
+    // Try to extract location information and determine location-based tier
+    try {
+      // Extract location from title and content
+      const locationResult = await this.locationService.extractLocations(article, {
+        fetchFullContent: true,  // Don't fetch full content for performance
+        minConfidence: 0.4        // Require reasonable confidence
+      });
+      
+      // Set the location if we found one with reasonable confidence
+      if (locationResult.primaryLocation && locationResult.primaryLocation.confidence >= 0.4) {
+        article.location = locationResult.primaryLocation.name;
+      } else if (!location) { // Only set to Global if we don't already have a location from flair
+        article.location = "Global"; // Default if no location found
+      }
+      
+      // IMPORTANT: Override the mass-based tier with the location-based tier if available
+      if (locationResult.tier && (locationResult.tier === 'close' || locationResult.tier === 'medium' || locationResult.tier === 'far')) {
+        const originalTier = article.tier;
+        article.tier = locationResult.tier;
+        // No special logging
+      } else {
+        // No special logging
+      }
+    } catch (error) {
+      console.warn(`Failed to extract location for article ${article.id}: ${error}`);
+      if (!location) { // Only set to Global if we don't already have a location from flair
         article.location = "Global"; // Default on error
       }
     }
@@ -206,9 +215,9 @@ export class RedditService {
         sourceUrl: 'https://reddit.com/r/science/mock1',
         author: 'science_enthusiast',
         publishedAt: new Date().toISOString(),
-        location: '',  // Will be extracted by LocationService
+        location: '',  // Will be extracted as 'Cambridge, Massachusetts' (far from Oklahoma City)
         mass: 120000,
-        tier: 'close' as TierType,
+        tier: 'far' as TierType, // Initial tier, will be updated based on location distance
         read: false
       },
       {
@@ -219,22 +228,22 @@ export class RedditService {
         sourceUrl: 'https://reddit.com/r/technology/mock2',
         author: 'tech_news',
         publishedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-        location: '',  // Will be extracted by LocationService
+        location: '',  // Will be extracted as 'San Francisco, California' (far from Oklahoma City)
         mass: 180000,
-        tier: 'medium' as TierType,
+        tier: 'far' as TierType, // Initial tier, will be updated based on location distance
         read: false
       },
       {
         id: 'reddit-mock3',
-        title: 'Global Economic Report Shows Surprising Trends in European Markets',
-        content: 'The latest economic report reveals unexpected patterns in global markets, particularly in Germany and France...',
+        title: 'Dallas City Council Approves New Urban Development Plan',
+        content: 'The Dallas City Council has approved a comprehensive urban development plan that will transform the downtown area with new parks and infrastructure...',
         source: 'reddit',
-        sourceUrl: 'https://reddit.com/r/economics/mock3',
-        author: 'market_analyst',
+        sourceUrl: 'https://reddit.com/r/localnews/mock3',
+        author: 'texas_reporter',
         publishedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-        location: '',  // Will be extracted by LocationService
-        mass: 250000,
-        tier: 'far' as TierType,
+        location: '',  // Will be extracted as 'Dallas, Texas' (close to Oklahoma City)
+        mass: 90000,
+        tier: 'close' as TierType, // Initial tier, will be updated based on location distance
         read: false
       }
     ];

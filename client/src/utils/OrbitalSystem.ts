@@ -118,12 +118,15 @@ export class OrbitalSystem {
       // Fetch articles from the API
       const articles = await ArticleService.getArticles(zipCode, query);
       
+      // Simple log of article count
+      console.log(`Fetched ${articles.length} articles`);
+      
       // Create planets for each article
       articles.forEach(article => {
         Planet.fromArticle(article, this.scene);
       });
       
-      console.log(`Loaded ${articles.length} articles as planets`);
+      // console.log(`Loaded ${articles.length} articles as planets`);
     } catch (error) {
       console.error('Failed to load articles:', error);
     }

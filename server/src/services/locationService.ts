@@ -77,9 +77,11 @@ export class LocationService {
     } = options;
     
     let textToAnalyze = article.content || article.title;
+
+    // No special logging
     
     // Fetch full content if needed and not already available
-    if (fetchFullContent && !article.content && article.sourceUrl) {
+    if (fetchFullContent && article.sourceUrl) {
       try {
         const fetchedContent = await this.fetchArticleContent(article.sourceUrl);
         if (fetchedContent) {
@@ -92,6 +94,8 @@ export class LocationService {
     
     // Extract locations from text
     const locations = this.extractLocationsFromText(textToAnalyze);
+
+    // No special logging
     
     // Filter by confidence and limit number
     const filteredLocations = locations
@@ -126,7 +130,7 @@ export class LocationService {
           };
           
           tier = geoResult.tier;
-          console.log(`Distance-based tier for "${primaryLocation.name}": ${tier} (${geoResult.distanceInKilometers.toFixed(2)} km)`);
+          // No special logging
         }
       } catch (error) {
         console.error('Error calculating distance for location:', error);
@@ -162,6 +166,8 @@ export class LocationService {
     // Extract places
     const places = doc.places();
     const locationMentions = new Map<string, number>();
+
+    // No special logging
     
     // Count mentions of each location
     places.forEach(place => {

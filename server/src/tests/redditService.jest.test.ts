@@ -48,7 +48,7 @@ describe('RedditService', () => {
     }
   }, 10000); // Increase timeout to 10 seconds for API calls
   
-  it('should determine the correct tier based on mass', () => {
+  it('should determine the correct tier based on mass', async () => {
     // Directly test the determineTierFromMass method by accessing it through the private method
     // We need to use type assertion to access private methods
     const determineTierFromMass = (mass: number): TierType => {
@@ -99,9 +99,12 @@ describe('RedditService', () => {
     });
     
     // Check the mass calculation and tier assignment in the transformed posts
+    const resolvedLowMassPost = await lowMassPost;
+    const resolvedHighMassPost = await highMassPost;
+    
     console.log('Transformed posts:', {
-      lowMass: { mass: lowMassPost.mass, tier: lowMassPost.tier },
-      highMass: { mass: highMassPost.mass, tier: highMassPost.tier }
+      lowMass: { mass: resolvedLowMassPost.mass, tier: resolvedLowMassPost.tier },
+      highMass: { mass: resolvedHighMassPost.mass, tier: resolvedHighMassPost.tier }
     });
   });
   
