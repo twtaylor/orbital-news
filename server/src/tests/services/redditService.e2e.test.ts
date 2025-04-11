@@ -30,14 +30,19 @@ describe('RedditService E2E', () => {
     expect(article.title).toBeDefined();
     expect(article.content).toBeDefined();
     expect(article.source).toBe('reddit');
-    expect(article.sourceUrl).toContain('reddit.com');
+    // Reddit posts may link to external sources, so we just verify the URL is valid
+    expect(article.sourceUrl).toBeDefined();
+    // Only check the URL format if sourceUrl is defined
+    if (article.sourceUrl) {
+      expect(article.sourceUrl.startsWith('http')).toBe(true);
+    }
     
     // Verify location was extracted
     expect(article.location).toBeDefined();
     expect(article.location.length).toBeGreaterThan(0);
     
     // Log the article details for inspection
-    console.log('Article with extracted location:', {
+    console.log('Reddit article with extracted location:', {
       title: article.title.substring(0, 50) + '...',
       content: article.content.substring(0, 50) + '...',
       location: article.location,

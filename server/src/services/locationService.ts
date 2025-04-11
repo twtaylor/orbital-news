@@ -77,8 +77,6 @@ export class LocationService {
     } = options;
     
     let textToAnalyze = article.content || article.title;
-
-    // No special logging
     
     // Fetch full content if needed and not already available
     if (fetchFullContent && article.sourceUrl) {
@@ -95,8 +93,6 @@ export class LocationService {
     // Extract locations from text
     const locations = this.extractLocationsFromText(textToAnalyze);
 
-    // No special logging
-    
     // Filter by confidence and limit number
     const filteredLocations = locations
       .filter(loc => loc.confidence >= minConfidence)
