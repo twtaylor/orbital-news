@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
+    "dev": "pnpm build && node dist/index.js",
     "dev:watch": "tsc -w & nodemon dist/index.js",
     "build": "tsc",
     "clean": "rm -rf dist",
@@ -15,10 +15,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:services": "jest src/tests/services",
-    "test:reddit": "jest src/tests/redditService.test.ts",
-    "test:reddit:jest": "jest src/tests/redditService.jest.test.ts",
-    "test:reddit:js": "node src/tests/redditServiceTest.js"
+    "test:services": "jest src/tests/services"
   },
   "keywords": [
     "news",
@@ -48,8 +45,7 @@
     "nodemon": "^3.1.9",
     "ts-jest": "^29.3.1",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   },
   "jest": {
     "preset": "ts-jest",
