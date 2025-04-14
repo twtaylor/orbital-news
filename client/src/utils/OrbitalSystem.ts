@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Planet } from './Planet';
 import { ArticleService } from '../services/api';
+import { Starfield } from './Starfield';
 
 /**
  * OrbitalSystem class to manage the Three.js scene and planets
@@ -29,6 +30,9 @@ export class OrbitalSystem {
   
   // DOM element
   container: HTMLElement;
+  
+  // Starfield
+  starfield?: Starfield;
   
   /**
    * Create a new orbital system
@@ -76,6 +80,9 @@ export class OrbitalSystem {
     
     // Create sun (center)
     this.createSun();
+    
+    // Create starfield with minimal stars for a subtle effect
+    this.starfield = new Starfield(this.scene, this.camera, 500, 200);
     
     // Start animation loop
     this.animate();
@@ -348,6 +355,11 @@ export class OrbitalSystem {
       this.camera.lookAt(target);
     }
     
+    // Update starfield position to follow camera
+    if (this.starfield) {
+      this.starfield.update();
+    }
+    
     this.renderer.render(this.scene, this.camera);
   };
   
@@ -388,6 +400,11 @@ export class OrbitalSystem {
         }
       }
     });
+    
+    // Dispose of starfield
+    if (this.starfield) {
+      this.starfield.dispose();
+    }
     
     this.renderer.dispose();
   }
