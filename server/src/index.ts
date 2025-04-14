@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import routes from './routes';
 import { globalErrorHandler } from './utils/errorHandler';
+import MongoManager from './database/MongoManager';
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -41,11 +42,50 @@ app.all('*', (req: Request, res: Response, next: NextFunction) => {
 // Global error handling middleware
 app.use(globalErrorHandler);
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 API available at http://localhost:${PORT}/api`);
-});
+// Function to start the server
+const startServer = () => {
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 API available at http://localhost:${PORT}/api`);
+  });
+
+  // Return server instance for graceful shutdown
+  return server;
+};
+
+// Connect to MongoDB and start server
+console.log('🔌 Connecting to MongoDB...');
+MongoManager.connect()
+  .then(() => {
+    console.log('💾 MongoDB connection initialized');
+    console.log('🔄 Article storage enabled for improved performance');
+    
+    // Start the server after successful MongoDB connection
+    const server = startServer();
+    
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        console.log('Server closed');
+        MongoManager.disconnect()
+          .then(() => {
+            console.log('MongoDB disconnected');
+            process.exit(0);
+          })
+          .catch(() => process.exit(1));
+      });
+    });
+  })
+  .catch((err: Error) => {
+    console.error('❌ MongoDB connection failed');
+    console.error('🚫 Server startup aborted - MongoDB is required');
+    console.log('💡 Start MongoDB with `pnpm mongo:start` and try again');
+    console.log('💡 Run `pnpm mongo:status` to check MongoDB status');
+    process.exit(1);
+  });
+
+// SIGTERM handlers are now defined in the MongoDB connection promise chains above
 
 export default app;

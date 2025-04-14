@@ -3,6 +3,8 @@ import fetch from 'node-fetch';
 import { Article, TierType } from '../types/models/article.type';
 import { RedditTokenResponse, RedditPost, RedditPostData } from '../types/services/reddit.type';
 import { LocationService } from './locationService';
+import { ArticleStore } from './articleStore';
+import MongoManager from '../database/MongoManager';
 
 // Load environment variables
 dotenv.config();
@@ -17,15 +19,42 @@ export class RedditService {
   private accessToken: string | null = null;
   private tokenExpiry: number = 0;
   private locationService: LocationService;
+  private articleStore: ArticleStore;
 
   constructor() {
     this.clientId = process.env.REDDIT_CLIENT_ID || '';
     this.clientSecret = process.env.REDDIT_CLIENT_SECRET || '';
     this.userAgent = 'OrbitalNews/1.0';
     this.locationService = new LocationService();
+    this.articleStore = new ArticleStore();
     
     if (!this.clientId || !this.clientSecret) {
       console.warn('Reddit API credentials not found in environment variables');
+    }
+    
+    // Initialize and check for today's articles
+    this.checkForTodaysArticles();
+  }
+  
+  /**
+   * Check if we have today's articles and fetch them if needed
+   */
+  private async checkForTodaysArticles(): Promise<void> {
+    try {
+      // Check if we need to load initial data
+      const hasToday = await this.articleStore.hasTodaysArticles('reddit');
+      
+      if (!hasToday) {
+        console.log('No Reddit articles for today, fetching from API...');
+        // This will trigger a fetch and store in the background
+        this.fetchArticles().catch(err => {
+          console.error('Error fetching initial Reddit articles:', err);
+        });
+      } else {
+        console.log('Found Reddit articles for today');
+      }
+    } catch (error) {
+      console.error('Error checking for today\'s articles:', error);
     }
   }
 
@@ -84,56 +113,109 @@ export class RedditService {
    * @param timeframe Time frame for posts (default: 'day')
    * @returns Promise with array of articles
    */
-  async fetchArticles(subreddit: string = 'news', limit: number = 10, timeframe: string = 'day'): Promise<Article[]> {
+  async fetchArticles(subreddit: string | string[] = 'news', limit: number = 10, timeframe: string = 'day', useStore: boolean = true): Promise<Article[]> {
+    // Try to get stored articles first if requested and MongoDB is connected
+    if (useStore && MongoManager.isConnected()) {
+      try {
+        const storedArticles = await this.articleStore.getArticles({
+          source: 'reddit',
+          limit: limit,
+          daysBack: timeframe === 'day' ? 1 : (timeframe === 'week' ? 7 : 30)
+        });
+        
+        if (storedArticles.length > 0) {
+          console.log(`Using ${storedArticles.length} stored Reddit articles`);
+          return storedArticles;
+        }
+      } catch (error) {
+        console.warn('Error retrieving stored articles:', error);
+        // Continue with API fetch if store retrieval fails
+      }
+    }
+    
     // Use mock data if credentials aren't available
     if (!this.clientId || !this.clientSecret) {
       console.log('Using mock Reddit data (no API credentials)');
-      return this.getMockArticles();
+      const mockArticles = await this.getMockArticles();
+      
+      // Store mock articles if MongoDB is connected
+      if (MongoManager.isConnected()) {
+        await this.articleStore.storeArticles(mockArticles);
+      }
+      
+      return mockArticles;
     }
 
     try {
       // Get access token
       const token = await this.getAccessToken();
       
-      // Fetch posts from Reddit
-      const response = await fetch(
-        `https://oauth.reddit.com/r/${subreddit}/top.json?limit=${limit}&t=${timeframe}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'User-Agent': this.userAgent
+      let allArticles: Article[] = [];
+      const subredditsToFetch = Array.isArray(subreddit) ? subreddit : [subreddit];
+
+      // Create fetch promises for each subreddit
+      const fetchPromises = subredditsToFetch.map(async (sub) => {
+        try {
+          const response = await fetch(
+            `https://oauth.reddit.com/r/${sub}/top.json?limit=${limit}&t=${timeframe}`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'User-Agent': this.userAgent
+              }
+            }
+          );
+
+          if (!response.ok) {
+            console.warn(`Reddit API error for ${sub}: ${response.status} ${response.statusText}`);
+            return []; // Return empty array for this failed subreddit fetch
           }
+
+          const data = await response.json() as RedditPostData;
+          const articlePromises = data.data.children.map(post => 
+            this.transformRedditPost(post.data)
+          );
+          return await Promise.all(articlePromises);
+        } catch (err) {
+          console.warn(`Failed to fetch or process articles from ${sub}:`, err);
+          return []; // Return empty array on error for this subreddit
         }
-      );
+      });
+
+      // Execute all fetch promises concurrently
+      const results = await Promise.all(fetchPromises);
       
-      if (!response.ok) {
-        throw new Error(`Reddit API error: ${response.status} ${response.statusText}`);
-      }
-      
-      // Parse response
-      const data = await response.json() as RedditPostData;
-      
-      // Transform Reddit posts into our Article format (with Promise.all to handle async transformations)
-      const articlePromises = data.data.children.map(post => 
-        this.transformRedditPost(post.data)
-      );
-      
-      const articles = await Promise.all(articlePromises);
-      
-      // Log a sample article for debugging
-      if (articles.length > 0) {
+      // Flatten the results into a single array of articles
+      allArticles = results.flat();
+     
+      // Log a sample article for debugging, but only when not in a test environment
+      if (allArticles.length > 0 && process.env.NODE_ENV !== 'test') {
         console.log('Sample article with location:', {
-          title: articles[0].title.substring(0, 50) + '...',
-          location: articles[0].location,
-          tier: articles[0].tier
+          title: allArticles[0].title.substring(0, 50) + '...',
+          location: allArticles[0].location,
+          tier: allArticles[0].tier
         });
       }
       
-      return articles;
+      // Store the fetched articles if MongoDB is connected
+      if (MongoManager.isConnected()) {
+        await this.articleStore.storeArticles(allArticles);
+      }
+      
+      return allArticles;
     } catch (error) {
       console.error('Error fetching from Reddit:', error);
-      return [];
+      
+      // Fall back to mock data on error
+      const mockArticles = await this.getMockArticles();
+      
+      // Store mock articles if MongoDB is connected
+      if (MongoManager.isConnected()) {
+        await this.articleStore.storeArticles(mockArticles);
+      }
+      
+      return mockArticles;
     }
   }
 

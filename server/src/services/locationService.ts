@@ -228,7 +228,7 @@ export class LocationService {
       // In a production environment, use a proper HTML parser
       return this.extractTextFromHtml(html);
     } catch (error) {
-      console.error(`Error fetching article content: ${error}`);
+      console.error(`Error fetching article content for URL ${url}: ${error}`);
       return '';
     }
   }
