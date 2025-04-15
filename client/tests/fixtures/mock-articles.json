@@ -1,0 +1,67 @@
+[
+  {
+    "id": "mock-article-1",
+    "title": "Technology Advances in AI Research",
+    "content": "Recent breakthroughs in artificial intelligence research have led to significant improvements in natural language processing and computer vision systems.",
+    "source": "Tech News",
+    "sourceUrl": "https://example.com/tech-news/1",
+    "author": "Jane Smith",
+    "publishedAt": "2025-04-10T12:00:00Z",
+    "location": "San Francisco",
+    "tier": "close",
+    "mass": 100000,
+    "read": false
+  },
+  {
+    "id": "mock-article-2",
+    "title": "Climate Change Impact on Global Weather Patterns",
+    "content": "Scientists report increasing evidence that climate change is altering global weather patterns, leading to more extreme weather events worldwide.",
+    "source": "Science Daily",
+    "sourceUrl": "https://example.com/science-daily/2",
+    "author": "Michael Johnson",
+    "publishedAt": "2025-04-11T14:30:00Z",
+    "location": "London",
+    "tier": "medium",
+    "mass": 150000,
+    "read": false
+  },
+  {
+    "id": "mock-article-3",
+    "title": "Economic Outlook for Second Quarter",
+    "content": "Economists predict steady growth in the second quarter despite ongoing supply chain challenges and inflationary pressures.",
+    "source": "Financial Times",
+    "sourceUrl": "https://example.com/financial-times/3",
+    "author": "Sarah Williams",
+    "publishedAt": "2025-04-12T09:15:00Z",
+    "location": "New York",
+    "tier": "far",
+    "mass": 200000,
+    "read": false
+  },
+  {
+    "id": "mock-article-4",
+    "title": "New Developments in Space Exploration",
+    "content": "Space agencies announce collaborative mission to explore the outer reaches of our solar system with advanced robotic probes.",
+    "source": "Space News",
+    "sourceUrl": "https://example.com/space-news/4",
+    "author": "David Chen",
+    "publishedAt": "2025-04-13T16:45:00Z",
+    "location": "Houston",
+    "tier": "medium",
+    "mass": 175000,
+    "read": false
+  },
+  {
+    "id": "mock-article-5",
+    "title": "Advances in Renewable Energy Technology",
+    "content": "Breakthrough in solar panel efficiency could make renewable energy more accessible and affordable for residential use.",
+    "source": "Energy Today",
+    "sourceUrl": "https://example.com/energy-today/5",
+    "author": "Lisa Rodriguez",
+    "publishedAt": "2025-04-14T11:20:00Z",
+    "location": "Berlin",
+    "tier": "close",
+    "mass": 125000,
+    "read": false
+  }
+]

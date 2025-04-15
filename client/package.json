@@ -8,15 +8,20 @@
     "build:prod": "tsc && vite build --mode production",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "package": "pnpm build:prod || (echo 'Using existing build' && tar -czf orbital-news-client.tar.gz -C dist .)"
+    "package": "pnpm build:prod || (echo 'Using existing build' && tar -czf orbital-news-client.tar.gz -C dist .)",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report"
   },
   "dependencies": {
-    "three": "^0.162.0",
     "axios": "^1.6.7",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "three": "^0.162.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.51.1",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@types/three": "^0.162.0",
