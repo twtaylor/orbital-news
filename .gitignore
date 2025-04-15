@@ -49,3 +49,8 @@ coverage/
 .tmp/
 tmp/
 temp/
+
+# Package
+orbital-news-client.tar.gz
+orbital-news-server.tar.gz
+package-tmp/

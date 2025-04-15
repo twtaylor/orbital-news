@@ -40,10 +40,16 @@ export class MongoManager {
   }
 
   /**
-   * Check if MongoDB is running locally using the docker ps command
+   * Check if MongoDB is running and accessible
    * @returns Promise that resolves to true if MongoDB is running, false otherwise
    */
   private async isMongoDBRunningLocally(): Promise<boolean> {
+    // In production, skip Docker check and just try to connect directly
+    if (process.env.NODE_ENV === 'production') {
+      return true; // Assume MongoDB is running in production
+    }
+    
+    // In development, check if the MongoDB Docker container is running
     return new Promise((resolve) => {
       exec('docker ps | grep mongo', (error, stdout) => {
         if (error || !stdout) {
@@ -105,7 +111,11 @@ export class MongoManager {
     // Create a new connection promise
     this.connectionPromise = new Promise<void>(async (resolve, reject) => {
       try {
-        // Check if MongoDB is running locally
+        // Log the current environment
+        const environment = process.env.NODE_ENV || 'development';
+        console.log(`🌎 Running in ${environment.toUpperCase()} environment`);
+        
+        // In development, check if MongoDB is running locally
         const isRunning = await this.isMongoDBRunningLocally();
         
         if (!isRunning) {

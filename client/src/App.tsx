@@ -14,6 +14,24 @@ function App() {
   // Initialize the orbital system
   useEffect(() => {
     if (containerRef.current && !orbitalSystemRef.current) {
+      // Create a mock article for demonstration purposes
+      // This can be removed once real article selection is implemented
+      const mockArticle: Article = {
+        id: 'mock-article',
+        title: 'Welcome to Orbital News',
+        content: 'This is a demonstration of the Orbital News visualization. The planets represent news articles from around the world.',
+        source: 'Orbital News',
+        publishedAt: new Date().toISOString(),
+        sourceUrl: '',
+        tier: 'close',
+        mass: 100000,
+        location: 'Global',
+        read: false
+      };
+      
+      // Set the mock article for demonstration
+      setSelectedArticle(mockArticle);
+      
       orbitalSystemRef.current = new OrbitalSystem(containerRef.current);
       
       // Load initial articles
@@ -29,10 +47,7 @@ function App() {
     };
   }, [zipCode]);
 
-  // Handle article selection
-  const handleArticleClick = (article: Article) => {
-    setSelectedArticle(article);
-  };
+  // Note: Article selection is currently handled internally by the OrbitalSystem
 
   // Handle search
   const handleSearch = () => {

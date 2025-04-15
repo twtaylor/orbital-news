@@ -15,10 +15,16 @@ const options = {
 };
 
 /**
- * Check if MongoDB is running locally using the docker ps command
+ * Check if MongoDB is running and accessible
  * @returns Promise that resolves to true if MongoDB is running, false otherwise
  */
 const isMongoDBRunningLocally = async (): Promise<boolean> => {
+  // In production, skip Docker check and just try to connect directly
+  if (process.env.NODE_ENV === 'production') {
+    return true; // Assume MongoDB is running in production
+  }
+  
+  // In development, check if the MongoDB Docker container is running
   return new Promise((resolve) => {
     exec('docker ps | grep mongo', (error, stdout) => {
       if (error || !stdout) {
@@ -70,7 +76,7 @@ export const checkCollectionsExist = async (): Promise<boolean> => {
 // Connect to MongoDB
 export const connectToMongoDB = async (): Promise<void> => {
   try {
-    // Check if MongoDB is running locally
+    // In development, check if MongoDB is running locally
     const isRunning = await isMongoDBRunningLocally();
     
     if (!isRunning) {

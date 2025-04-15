@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { Article, ArticleResponse } from '../types/Article';
 
-const API_URL = '/api';
+// Use environment-specific API URL
+const API_URL = import.meta.env.PROD ? 'https://localgrp.news/api' : '/api';
 
 /**
  * Service for interacting with the Orbital News API

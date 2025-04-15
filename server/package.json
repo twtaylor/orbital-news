@@ -10,6 +10,7 @@
     "mongo:start": "node scripts/start-mongo.js",
     "mongo:status": "node scripts/mongo-status.js",
     "build": "tsc",
+    "build:prod": "NODE_ENV=production pnpm clean && tsc",
     "clean": "rm -rf dist",
     "rebuild": "pnpm clean && pnpm build",
     "lint": "eslint . --ext .ts",
@@ -17,7 +18,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:services": "jest src/tests/services"
+    "test:services": "jest src/tests/services",
+    "package": "mkdir -p package-tmp && cp -r dist package.json .env.example README.md package-tmp/ && cd package-tmp && npm install --production && cd .. && tar -czf orbital-news-server.tar.gz -C package-tmp . && rm -rf package-tmp"
   },
   "keywords": [
     "news",
