@@ -10,6 +10,7 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [zipCode, setZipCode] = useState('20001'); // Default to DC
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPaused, setIsPaused] = useState(false);
 
   // Initialize the orbital system
   useEffect(() => {
@@ -63,6 +64,14 @@ function App() {
     }
   };
 
+  // Handle pause/play
+  const handlePauseToggle = () => {
+    if (orbitalSystemRef.current) {
+      const newPauseState = orbitalSystemRef.current.togglePause();
+      setIsPaused(newPauseState);
+    }
+  };
+
   return (
     <div className="app">
       {/* Orbital visualization container */}
@@ -74,6 +83,15 @@ function App() {
         onClick={() => setIsMenuOpen(!isMenuOpen)}
       >
         {isMenuOpen ? '×' : '☰'}
+      </button>
+
+      {/* Pause/Play button */}
+      <button 
+        className="pause-button" 
+        onClick={handlePauseToggle}
+        title={isPaused ? "Resume motion" : "Pause motion"}
+      >
+        {isPaused ? '▶' : '⏸'}
       </button>
 
       {/* Menu panel */}

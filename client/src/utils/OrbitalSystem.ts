@@ -27,6 +27,7 @@ export class OrbitalSystem {
   
   // Animation
   animationId?: number;
+  isPaused: boolean = false;
   
   // DOM element
   container: HTMLElement;
@@ -324,18 +325,30 @@ export class OrbitalSystem {
   }
   
   /**
+   * Toggle pause state
+   * @returns The new pause state
+   */
+  togglePause(): boolean {
+    this.isPaused = !this.isPaused;
+    return this.isPaused;
+  }
+
+  /**
    * Animation loop
    */
   animate = (): void => {
     this.animationId = requestAnimationFrame(this.animate);
     
-    // Update all planets
-    for (let i = 0; i < Planet.planets.length; i++) {
-      Planet.planets[i].updateVelocity();
-      Planet.planets[i].updatePosition();
-      
-      if (Planet.collisionSystem) {
-        Planet.planets[i].collisionDetection(this.scene);
+    // Only update planet positions if not paused
+    if (!this.isPaused) {
+      // Update all planets
+      for (let i = 0; i < Planet.planets.length; i++) {
+        Planet.planets[i].updateVelocity();
+        Planet.planets[i].updatePosition();
+        
+        if (Planet.collisionSystem) {
+          Planet.planets[i].collisionDetection(this.scene);
+        }
       }
     }
     
