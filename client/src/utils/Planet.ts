@@ -100,22 +100,70 @@ export class Planet {
     if (this.label && scene.getObjectById(this.label.id)) {
       scene.remove(this.label);
     }
+    
+    // Don't create a label for the sun (center object named 'Local Group News')
+    if (this.name === 'Local Group News') {
+      return;
+    }
 
     // Create a canvas for the label
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    canvas.width = 256;
-    canvas.height = 128;
+    // Increase canvas size for longer text
+    canvas.width = 512;
+    canvas.height = 256;
 
-    // Draw the text
-    context.fillStyle = 'rgba(0, 0, 0, 0)';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.font = '24px Arial';
-    context.fillStyle = '#ffffff';
+    // Make canvas fully transparent
+    // No background fill - leave the canvas transparent
+    
+    // Set up text properties with better visibility
+    context.font = 'bold 20px Arial';
     context.textAlign = 'center';
-    context.fillText(this.name, canvas.width / 2, canvas.height / 2);
+    context.textBaseline = 'middle';
+    
+    // Add text stroke for better visibility against any background
+    context.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    context.lineWidth = 4;
+    context.fillStyle = '#ffffff';
+    
+    // Word wrap the text
+    const maxWidth = canvas.width - 20; // Padding
+    const lineHeight = 24;
+    const words = this.name.split(' ');
+    let line = '';
+    let y = 40; // Starting y position
+    
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' ';
+      const metrics = context.measureText(testLine);
+      const testWidth = metrics.width;
+      
+      if (testWidth > maxWidth && i > 0) {
+        // Draw the line with stroke for better visibility
+        context.strokeText(line, canvas.width / 2, y);
+        context.fillText(line, canvas.width / 2, y);
+        line = words[i] + ' ';
+        y += lineHeight;
+        
+        // Check if we've reached the bottom of the canvas
+        if (y > canvas.height - 40) {
+          line += '...';
+          context.strokeText(line, canvas.width / 2, y);
+          context.fillText(line, canvas.width / 2, y);
+          break;
+        }
+      } else {
+        line = testLine;
+      }
+    }
+    
+    // Draw the last line if there's text left
+    if (line.trim() !== '' && y <= canvas.height - 40) {
+      context.strokeText(line, canvas.width / 2, y);
+      context.fillText(line, canvas.width / 2, y);
+    }
 
     // Create a texture from the canvas
     const texture = new THREE.CanvasTexture(canvas);
@@ -123,9 +171,13 @@ export class Planet {
     this.label = new THREE.Sprite(material);
     
     // Position the label above the planet
-    const labelScale = this.radius * 5;
-    this.label.scale.set(labelScale, labelScale / 2, 1);
-    this.label.position.set(this.pos.x, this.pos.y + this.radius * 1.5, this.pos.z);
+    // Scale based on planet radius but maintain aspect ratio of the canvas
+    const labelScale = this.radius * 6; // Slightly larger base scale
+    const aspectRatio = canvas.width / canvas.height;
+    this.label.scale.set(labelScale * aspectRatio, labelScale, 1);
+    
+    // Position higher above the planet to accommodate more text
+    this.label.position.set(this.pos.x, this.pos.y + this.radius * 2.5, this.pos.z);
     
     scene.add(this.label);
   }
@@ -204,8 +256,8 @@ export class Planet {
       const scaledVelocity = this.vel.mul(timeScale);
       this.pos = this.pos.add(scaledVelocity);
       
-      // Get the sun
-      const sun = Planet.planets[0]; // Assuming the sun is always the first planet
+      // Get the sun (first planet)
+      const sun = Planet.planets.find(planet => planet.name === 'Local Group News');
       
       if (sun && sun !== this) {
         // Calculate distance to the sun
@@ -244,7 +296,7 @@ export class Planet {
       }
       
       // Update trail (only for non-sun objects)
-      if (this.name !== 'Orbital News') {
+      if (this.name !== 'Local Group News') {
         this.updateTrail();
       }
     }
@@ -376,6 +428,28 @@ export class Planet {
   }
 
   /**
+   * Calculate planet radius based on article content length
+   * @param article The article to calculate radius for
+   * @returns The calculated radius
+   */
+  static calculateRadiusFromContent(article: Article): number {
+    // Default minimum and maximum radius values
+    const minRadius = 0.07;
+    const maxRadius = 0.25;
+    
+    // Get content length (use title length if content is missing)
+    const contentLength = article.content ? article.content.length : article.title.length;
+    
+    // Calculate base radius from content length
+    // Logarithmic scale to handle wide range of content lengths
+    // ln(x+1) to handle empty content
+    const baseRadius = Math.log(contentLength + 1) / 30;
+    
+    // Clamp radius between min and max values
+    return Math.max(minRadius, Math.min(maxRadius, baseRadius));
+  }
+
+  /**
    * Create a planet from an article
    */
   static fromArticle(article: Article, scene: THREE.Scene): Planet {
@@ -446,7 +520,10 @@ export class Planet {
     // Create a new planet
     const planet = new Planet(
       article.id,
-      article.title.length > 20 ? article.title.substring(0, 20) + '...' : article.title,
+      // Display up to 50 words of the title
+      article.title.split(' ').length > 50 ? 
+        article.title.split(' ').slice(0, 50).join(' ') + '...' : 
+        article.title,
       posX,
       posY,
       posZ,
@@ -454,7 +531,7 @@ export class Planet {
       velY, // Small random vertical velocity
       velZ, // Initial tangential velocity z
       article.mass,
-      Math.max(0.1, Math.min(0.5, article.mass / 200000)), // Scale radius based on mass
+      Planet.calculateRadiusFromContent(article), // Scale radius based on content length
       getColorFromTier(article.tier),
       false, // Not fixed
       false, // Not followed

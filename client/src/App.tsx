@@ -12,6 +12,24 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isPaused, setIsPaused] = useState(false);
 
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // 'h' key to pause/resume the simulation
+      if (event.key === 'h' || event.key === 'H') {
+        handlePauseToggle();
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Initialize the orbital system
   useEffect(() => {
     if (containerRef.current && !orbitalSystemRef.current) {
@@ -19,9 +37,9 @@ function App() {
       // This can be removed once real article selection is implemented
       const mockArticle: Article = {
         id: 'mock-article',
-        title: 'Welcome to Orbital News',
-        content: 'This is a demonstration of the Orbital News visualization. The planets represent news articles from around the world.',
-        source: 'Orbital News',
+        title: 'Welcome to Local Group News',
+        content: 'This is a demonstration of the Local Group News visualization. The planets represent news articles from around the world.',
+        source: 'Local Group News',
         publishedAt: new Date().toISOString(),
         sourceUrl: '',
         tier: 'close',
@@ -96,7 +114,7 @@ function App() {
 
       {/* Menu panel */}
       <div className={`menu-panel ${isMenuOpen ? 'open' : ''}`}>
-        <h1>Orbital News</h1>
+        <h1>Local Group News</h1>
         
         <div className="search-section">
           <h2>Search</h2>

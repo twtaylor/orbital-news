@@ -95,7 +95,7 @@ export class OrbitalSystem {
   createSun(): void {
     const sun = new Planet(
       'sun',
-      'Orbital News',
+      'Local Group News',
       0, 0, 0,  // Position
       0, 0, 0,  // Velocity
       50000000, // Mass - reduced for more stable orbits in the 10-20 range
@@ -145,7 +145,7 @@ export class OrbitalSystem {
    */
   clearArticlePlanets(): void {
     // Filter out the sun
-    const articlePlanets = Planet.planets.filter(planet => planet.name !== 'Orbital News');
+    const articlePlanets = Planet.planets.filter(planet => planet.name !== 'Local Group News');
     
     // Remove each article planet
     articlePlanets.forEach(planet => {
