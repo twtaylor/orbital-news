@@ -1,12 +1,9 @@
 import { Request, Response } from 'express';
-import { NewsService } from '../services/newsService';
+import ArticleStore from '../services/articleStore';
+import { articleFetcher } from '../services/articleFetcherService';
 
-// Initialize the news service
-const newsService = new NewsService();
-
-// In-memory cache for articles
-// In a production app, this would be stored in a database
-let cachedArticles: any[] = [];
+// Initialize the article store
+const articleStore = new ArticleStore();
 
 /**
  * Get all articles
@@ -14,19 +11,33 @@ let cachedArticles: any[] = [];
  */
 export const getArticles = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userZipCode = req.query.zipCode as string || '20001'; // Default to DC
-    const query = req.query.query as string;
+    const source = req.query.source as string;
+    const location = req.query.location as string;
+    const tier = req.query.tier as string;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 30; // Default to 30 articles
+    const daysBack = req.query.daysBack ? parseInt(req.query.daysBack as string) : 7; // Default to 7 days
     
-    // Use cached articles if available, otherwise fetch new ones
-    if (cachedArticles.length === 0) {
-      cachedArticles = await newsService.fetchAllArticles(userZipCode, query);
+    // Fetch articles from the database
+    const articles = await articleStore.getArticles({
+      source,
+      location,
+      tier,
+      limit,
+      daysBack
+    });
+    
+    // If no articles found, trigger a fetch
+    if (articles.length === 0) {
+      console.log('No articles found in database, triggering fetch');
+      // Don't await this to avoid blocking the response
+      articleFetcher.fetchAndStoreArticles();
     }
     
     res.status(200).json({
       status: 'success',
-      results: cachedArticles.length,
+      results: articles.length,
       data: {
-        articles: cachedArticles
+        articles
       }
     });
   } catch (error) {
@@ -46,15 +57,13 @@ export const getArticleById = async (req: Request, res: Response): Promise<void>
   try {
     const { id } = req.params;
     
-    // Ensure we have articles
-    if (cachedArticles.length === 0) {
-      const userZipCode = req.query.zipCode as string || '20001';
-      cachedArticles = await newsService.fetchAllArticles(userZipCode);
-    }
+    // Fetch articles from the database with a filter for the ID
+    const articles = await articleStore.getArticles({
+      articleId: id,
+      limit: 1
+    });
     
-    const article = cachedArticles.find(article => article.id === id);
-
-    if (!article) {
+    if (articles.length === 0) {
       res.status(404).json({
         status: 'fail',
         message: `No article found with ID: ${id}`
@@ -65,7 +74,7 @@ export const getArticleById = async (req: Request, res: Response): Promise<void>
     res.status(200).json({
       status: 'success',
       data: {
-        article
+        article: articles[0]
       }
     });
   } catch (error) {
@@ -85,9 +94,13 @@ export const markArticleAsRead = async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params;
     
-    const articleIndex = cachedArticles.findIndex(article => article.id === id);
+    // Get the article from the database
+    const articles = await articleStore.getArticles({
+      articleId: id,
+      limit: 1
+    });
     
-    if (articleIndex === -1) {
+    if (articles.length === 0) {
       res.status(404).json({
         status: 'fail',
         message: `No article found with ID: ${id}`
@@ -95,13 +108,13 @@ export const markArticleAsRead = async (req: Request, res: Response): Promise<vo
       return;
     }
     
-    // Mark as read
-    cachedArticles[articleIndex].read = true;
+    // Mark as read in the database
+    const updatedArticle = await articleStore.markArticleAsRead(id);
     
     res.status(200).json({
       status: 'success',
       data: {
-        article: cachedArticles[articleIndex]
+        article: updatedArticle
       }
     });
   } catch (error) {
@@ -109,6 +122,52 @@ export const markArticleAsRead = async (req: Request, res: Response): Promise<vo
     res.status(500).json({
       status: 'error',
       message: 'Failed to update article'
+    });
+  }
+};
+
+/**
+ * Get article fetcher status
+ * @route GET /api/articles/fetcher/status
+ */
+export const getArticleFetcherStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const status = articleFetcher.getStatus();
+    
+    res.status(200).json({
+      status: 'success',
+      data: status
+    });
+  } catch (error) {
+    console.error('Error in getArticleFetcherStatus:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get article fetcher status'
+    });
+  }
+};
+
+/**
+ * Trigger article fetch manually
+ * @route POST /api/articles/fetcher/fetch
+ */
+export const triggerArticleFetch = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Trigger article fetch in the background
+    articleFetcher.fetchAndStoreArticles()
+      .then(() => console.log('Manual article fetch completed'))
+      .catch(err => console.error('Error during manual article fetch:', err));
+    
+    res.status(202).json({
+      status: 'success',
+      message: 'Article fetch triggered',
+      data: articleFetcher.getStatus()
+    });
+  } catch (error) {
+    console.error('Error in triggerArticleFetch:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to trigger article fetch'
     });
   }
 };

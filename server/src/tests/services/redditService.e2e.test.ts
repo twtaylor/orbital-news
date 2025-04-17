@@ -141,7 +141,7 @@ describe('RedditService E2E', () => {
     // Log the article details for inspection
     console.log('Reddit article with extracted location:', {
       title: article.title.substring(0, 50) + '...',
-      content: article.content.substring(0, 50) + '...',
+      content: article.content ? article.content.substring(0, 50) + '...' : '[No content]',
       location: article.location,
       tier: article.tier,
       mass: article.mass

@@ -15,7 +15,7 @@ const ArticleSchema = new Schema(
     // Use articleId in the schema to avoid conflicts with Document._id
     articleId: { type: String, required: true, unique: true, index: true },
     title: { type: String, required: true },
-    content: { type: String, required: true },
+    content: { type: String, default: '' }, // Made optional with default empty string
     source: { type: String, required: true },
     sourceUrl: { type: String },
     author: { type: String },

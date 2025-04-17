@@ -5,6 +5,7 @@ import path from 'path';
 import routes from './routes';
 import { globalErrorHandler } from './utils/errorHandler';
 import MongoManager from './database/MongoManager';
+import { articleFetcher } from './services/articleFetcherService';
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -61,12 +62,22 @@ MongoManager.connect()
     console.log('💾 MongoDB connection initialized');
     console.log('🔄 Article storage enabled for improved performance');
     
+    // Initialize the article fetcher service
+    console.log('🔄 Starting article fetcher service...');
+    articleFetcher.start('0 * * * *'); // Run every hour
+    console.log('✅ Article fetcher service started');
+    
     // Start the server after successful MongoDB connection
     const server = startServer();
     
     // Handle graceful shutdown
     process.on('SIGTERM', () => {
       console.log('SIGTERM received, shutting down gracefully');
+      
+      // Stop the article fetcher
+      articleFetcher.stop();
+      console.log('Article fetcher stopped');
+      
       server.close(() => {
         console.log('Server closed');
         MongoManager.disconnect()

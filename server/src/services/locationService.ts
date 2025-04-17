@@ -76,6 +76,7 @@ export class LocationService {
       fetchFullContent = true
     } = options;
     
+    // Use article content if available, otherwise just use the title
     let textToAnalyze = article.content || article.title;
     
     // Fetch full content if needed and not already available
@@ -215,8 +216,28 @@ export class LocationService {
    * @returns Article content as text
    */
   private async fetchArticleContent(url: string): Promise<string> {
+    // Skip known paywalled or problematic sites
+    const paywallDomains = [
+      'nytimes.com', 'washingtonpost.com', 'wsj.com', 'ft.com',
+      'bloomberg.com', 'economist.com', 'reuters.com', 'newyorker.com',
+      'latimes.com', 'thetimes.co.uk', 'telegraph.co.uk'
+    ];
+    
+    // Check if URL is from a known paywalled site
+    if (paywallDomains.some(domain => url.includes(domain))) {
+      console.log(`Skipping content fetch for paywalled site: ${url}`);
+      return ''; // Return empty string for paywalled sites
+    }
+    
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5'
+        },
+        timeout: 5000 // 5 second timeout
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch content: ${response.status} ${response.statusText}`);
@@ -228,8 +249,8 @@ export class LocationService {
       // In a production environment, use a proper HTML parser
       return this.extractTextFromHtml(html);
     } catch (error) {
-      console.error(`Error fetching article content for URL ${url}: ${error}`);
-      return '';
+      console.warn(`Error fetching article content for URL ${url}: ${error}`);
+      return ''; // Return empty string on error
     }
   }
   

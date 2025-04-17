@@ -78,6 +78,7 @@ export class ArticleStore {
     tier?: string;
     limit?: number;
     daysBack?: number;
+    articleId?: string; // Added articleId parameter
   } = {}): Promise<Article[]> {
     if (!MongoManager.isConnected()) {
       console.warn('MongoDB not connected, returning empty results');
@@ -93,6 +94,7 @@ export class ArticleStore {
       if (source) query.source = source;
       if (location) query.location = location;
       if (tier) query.tier = tier;
+      if (options.articleId) query.articleId = options.articleId; // Added articleId to query
       
       // Filter by date range if specified
       if (daysBack > 0) {
@@ -179,6 +181,57 @@ export class ArticleStore {
       daysBack: 7,
       limit
     });
+  }
+
+  /**
+   * Mark an article as read in the database
+   * @param id Article ID to mark as read
+   * @returns Updated article
+   */
+  async markArticleAsRead(id: string): Promise<Article | null> {
+    if (!MongoManager.isConnected()) {
+      console.warn('MongoDB not connected, cannot mark article as read');
+      return null;
+    }
+
+    try {
+      // Find and update the article
+      const updatedDoc = await ArticleModel.findOneAndUpdate(
+        { articleId: id },
+        { read: true },
+        { new: true } // Return the updated document
+      ).lean();
+      
+      if (!updatedDoc) {
+        console.warn(`Article with ID ${id} not found`);
+        return null;
+      }
+      
+      // Cast the document to any to access the articleId field
+      const docAny = updatedDoc as any;
+      
+      // Map MongoDB document back to Article interface
+      const article: Article = {
+        id: docAny.articleId, // Map articleId back to id
+        title: docAny.title,
+        content: docAny.content,
+        source: docAny.source,
+        sourceUrl: docAny.sourceUrl,
+        author: docAny.author,
+        publishedAt: docAny.publishedAt,
+        location: docAny.location,
+        tags: docAny.tags,
+        mass: docAny.mass,
+        tier: docAny.tier as TierType,
+        read: docAny.read
+      };
+      
+      console.log(`Marked article ${id} as read`);
+      return article;
+    } catch (error) {
+      console.error(`Error marking article ${id} as read:`, error);
+      return null;
+    }
   }
 }
 

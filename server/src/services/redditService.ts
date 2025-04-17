@@ -239,7 +239,8 @@ export class RedditService {
     const article: Article = {
       id: `reddit-${post.id}`,
       title: post.title,
-      content: post.selftext || '',
+      // Only include content if it exists
+      ...(post.selftext ? { content: post.selftext } : {}),
       source: 'reddit',
       sourceUrl: post.url,
       author: post.author,
@@ -253,8 +254,10 @@ export class RedditService {
     // Try to extract location information and determine location-based tier
     try {
       // Extract location from title and content
+      // Use a more conservative approach - don't try to fetch full content by default
+      // to avoid issues with paywalled sites
       const locationResult = await this.locationService.extractLocations(article, {
-        fetchFullContent: true,  // Don't fetch full content for performance
+        fetchFullContent: false,  // Don't fetch full content by default to avoid paywall issues
         minConfidence: 0.4        // Require reasonable confidence
       });
       
@@ -267,11 +270,35 @@ export class RedditService {
       
       // IMPORTANT: Override the mass-based tier with the location-based tier if available
       if (locationResult.tier && (locationResult.tier === 'close' || locationResult.tier === 'medium' || locationResult.tier === 'far')) {
-        const originalTier = article.tier;
-        article.tier = locationResult.tier;
-        // No special logging
-      } else {
-        // No special logging
+        article.tier = locationResult.tier as TierType;
+      }
+      
+      // If we didn't get a good location from the title/content and the article is from a news source,
+      // try to fetch full content only for non-paywalled sites
+      if ((!locationResult.primaryLocation || locationResult.primaryLocation.confidence < 0.4) && 
+          post.url && post.url.includes('reddit.com') === false) {
+        
+        // Try again with full content fetch for non-Reddit URLs that might have more location info
+        const fullContentResult = await this.locationService.extractLocations(article, {
+          fetchFullContent: true,  // Now try with full content
+          minConfidence: 0.4
+        });
+        
+        if (fullContentResult.primaryLocation && 
+            fullContentResult.primaryLocation.confidence >= 0.4 && 
+            (!locationResult.primaryLocation || 
+             fullContentResult.primaryLocation.confidence > locationResult.primaryLocation.confidence)) {
+          
+          article.location = fullContentResult.primaryLocation.name;
+          
+          // Update tier if available
+          if (fullContentResult.tier && 
+              (fullContentResult.tier === 'close' || 
+               fullContentResult.tier === 'medium' || 
+               fullContentResult.tier === 'far')) {
+            article.tier = fullContentResult.tier as TierType;
+          }
+        }
       }
     } catch (error) {
       console.warn(`Failed to extract location for article ${article.id}: ${error}`);

@@ -13,7 +13,7 @@ export type TierType = 'close' | 'medium' | 'far';
 export interface Article {
   id: string;
   title: string;
-  content: string;
+  content?: string; // Made optional
   source: string;
   sourceUrl?: string;
   author?: string;
