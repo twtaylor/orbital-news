@@ -12,6 +12,7 @@ const config: PlaywrightTestConfig = {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
+    headless: true, // Explicitly set headless mode
   },
   projects: [
     {

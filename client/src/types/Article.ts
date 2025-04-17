@@ -13,6 +13,17 @@ export interface Position {
 }
 
 /**
+ * Location interface representing geographic coordinates and location information
+ */
+export interface Location {
+  lat?: number;
+  lng?: number;
+  city?: string;
+  state?: string;
+  country?: string;
+}
+
+/**
  * Article interface representing a news article in the solar system
  */
 export interface Article {
@@ -23,7 +34,7 @@ export interface Article {
   sourceUrl?: string;
   author?: string;
   publishedAt: string;
-  location: string; // Geographic location the article relates to
+  location: string | Location; // Geographic location the article relates to (can be string or Location object)
   tags?: string[];
   mass: number; // Based on source credibility and article length
   tier: TierType; // Orbital tier (close, medium, far)

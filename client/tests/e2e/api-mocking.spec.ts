@@ -25,8 +25,8 @@ test.describe('API Mocking', () => {
     // Open the menu
     await page.locator('.menu-toggle').click();
     
-    // Search to trigger API call
-    await page.getByRole('button', { name: 'Search' }).click();
+    // Click load articles button to trigger API call
+    await page.getByRole('button', { name: 'Load Articles' }).click();
     
     // Wait for articles to load
     await page.waitForTimeout(1000);

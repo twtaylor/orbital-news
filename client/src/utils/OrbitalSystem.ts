@@ -237,9 +237,10 @@ export class OrbitalSystem {
       // Update the raycaster with the current mouse position
       this.raycaster.setFromCamera(this.pointer, this.camera);
       
-      // Increase the precision of the raycaster
-      this.raycaster.params.Line.threshold = 0.2; // Increase threshold for better detection
-      this.raycaster.params.Points.threshold = 0.2;
+      // Increase the precision of the raycaster - use even more forgiving thresholds for Firefox
+      this.raycaster.params.Line.threshold = 0.3; // Increase threshold for better detection
+      this.raycaster.params.Points.threshold = 0.3;
+      this.raycaster.params.Mesh = { threshold: 0.1 }; // Add mesh threshold for better detection
       
       // Get intersections with all objects in the scene
       // Use a larger precision value to make hover detection more forgiving
@@ -279,7 +280,7 @@ export class OrbitalSystem {
             }
             
             // Additional check: check if we're close to the planet (more forgiving)
-            if (intersection.distance < 5 && hoveredObject.type === 'Mesh') {
+            if (intersection.distance < 8 && hoveredObject.type === 'Mesh') {
               // Get the planet's position
               const planetPos = new THREE.Vector3();
               planet.planet.getWorldPosition(planetPos);
@@ -291,7 +292,8 @@ export class OrbitalSystem {
               const distance = planetPos.distanceTo(intersectionPoint);
               
               // If we're close enough to the planet, consider it hovered
-              if (distance < planet.radius * 1.5) {
+              // Use a much more forgiving radius multiplier for better cross-browser compatibility
+              if (distance < planet.radius * 2.5) {
                 hoveredPlanet = planet;
                 break;
               }
@@ -620,15 +622,24 @@ export class OrbitalSystem {
     }
   };
 
+  // Performance optimization variables
+  private frameCount: number = 0;
+  private lastHoverCheckTime: number = 0;
+  
   /**
-   * Animation loop
+   * Animation loop with performance optimizations
    */
   animate = (): void => {
     this.animationId = requestAnimationFrame(this.animate);
+    this.frameCount++;
     
-    // Check for hover in every frame if not dragging
-    if (!this.isDragging) {
+    const currentTime = performance.now();
+    
+    // Performance optimization: Check hover less frequently
+    // Only check if not dragging and enough time has passed (16ms = ~60fps)
+    if (!this.isDragging && (currentTime - this.lastHoverCheckTime > 16)) {
       this.checkHover();
+      this.lastHoverCheckTime = currentTime;
     }
     
     // Only update planet positions if not paused
@@ -637,29 +648,50 @@ export class OrbitalSystem {
       for (let i = 0; i < Planet.planets.length; i++) {
         const planet = Planet.planets[i];
         
-        // Update velocity for all planets
-        planet.updateVelocity();
+        // Skip sun (first planet) for optimization
+        if (i === 0) continue;
         
-        // If this is the hovered planet, update position at 1/5 speed
-        if (this.hoveredArticleId && planet.id === this.hoveredArticleId) {
-          // Store original velocity
-          const originalVel = planet.vel.clone();
-          
-          // Set temporary slower velocity
-          planet.vel = planet.vel.mul(0.2);
-          
-          // Update position with slower velocity
-          planet.updatePosition();
-          
-          // Restore original velocity
-          planet.vel = originalVel;
-        } else {
-          // Normal update for non-hovered planets
-          planet.updatePosition();
+        // Performance optimization: Update distant planets less frequently
+        let shouldUpdate = true;
+        
+        // If it's not the hovered planet and not close to the camera, update less frequently
+        if (this.hoveredPlanet !== planet) {
+          // Very distant planets update every 3 frames
+          if (i > 10) {
+            shouldUpdate = (this.frameCount % 3 === i % 3);
+          }
+          // Medium distant planets update every 2 frames
+          else if (i > 5) {
+            shouldUpdate = (this.frameCount % 2 === i % 2);
+          }
         }
         
-        if (Planet.collisionSystem) {
-          planet.collisionDetection(this.scene);
+        if (shouldUpdate) {
+          // Update velocity for all planets
+          planet.updateVelocity();
+          
+          // If this is the hovered planet, update position at 1/5 speed
+          if (this.hoveredArticleId && planet.id === this.hoveredArticleId) {
+            // Store original velocity
+            const originalVel = planet.vel.clone();
+            
+            // Set temporary slower velocity
+            planet.vel = planet.vel.mul(0.2);
+            
+            // Update position with slower velocity
+            planet.updatePosition();
+            
+            // Restore original velocity
+            planet.vel = originalVel;
+          } else {
+            // Normal update for non-hovered planets
+            planet.updatePosition();
+          }
+          
+          // Performance optimization: Check collisions less frequently
+          if (Planet.collisionSystem && this.frameCount % 3 === 0) {
+            planet.collisionDetection(this.scene);
+          }
         }
       }
     }
@@ -680,8 +712,8 @@ export class OrbitalSystem {
       this.camera.lookAt(target);
     }
     
-    // Update starfield position to follow camera
-    if (this.starfield) {
+    // Performance optimization: Update starfield less frequently
+    if (this.starfield && this.frameCount % 2 === 0) {
       this.starfield.update();
     }
     

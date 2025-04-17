@@ -26,8 +26,8 @@ test.describe('Orbital News Application', () => {
     await expect(page.locator('.menu-panel')).toHaveClass(/open/);
     
     // Check for menu content
-    await expect(page.locator('.menu-panel h1').getByText('Orbital News')).toBeVisible();
-    await expect(page.locator('.search-section h2').getByText('Search')).toBeVisible();
+    await expect(page.locator('.menu-panel h1').getByText('Local Group News')).toBeVisible();
+    await expect(page.locator('.search-section h2').getByText('Location')).toBeVisible();
     
     // Close the menu
     await page.locator('.menu-toggle').click();

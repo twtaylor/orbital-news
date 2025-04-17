@@ -10,15 +10,12 @@ test.describe('Article Interactions', () => {
     await page.locator('.menu-toggle').click();
   });
 
-  test('should search for articles with zip code and query', async ({ page }) => {
+  test('should search for articles with zip code', async ({ page }) => {
     // Enter zip code
     await page.locator('#zipCode').fill('10001');
     
-    // Enter search query
-    await page.locator('#searchQuery').fill('technology');
-    
-    // Click search button
-    await page.getByRole('button', { name: 'Search' }).click();
+    // Click load articles button
+    await page.getByRole('button', { name: 'Load Articles' }).click();
     
     // Wait for articles to load
     await page.waitForTimeout(2000);
@@ -26,14 +23,13 @@ test.describe('Article Interactions', () => {
     // Check if orbital system has planets (visual check)
     await page.screenshot({ path: 'tests/screenshots/after-search.png' });
     
-    // Verify the search fields still have the entered values
+    // Verify the zip code field still has the entered value
     await expect(page.locator('#zipCode')).toHaveValue('10001');
-    await expect(page.locator('#searchQuery')).toHaveValue('technology');
   });
 
   test('should refresh articles', async ({ page }) => {
-    // Click refresh button
-    await page.getByRole('button', { name: 'Refresh' }).click();
+    // Click load articles button to refresh
+    await page.getByRole('button', { name: 'Load Articles' }).click();
     
     // Wait for articles to refresh
     await page.waitForTimeout(2000);

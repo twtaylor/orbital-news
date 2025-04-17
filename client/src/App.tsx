@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import './App.css';
 import { OrbitalSystem } from './utils/OrbitalSystem';
-import { Article } from './types/Article';
+import { Article, Location } from './types/Article';
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -215,7 +215,11 @@ function App() {
               {selectedArticle.location && (
                 <>
                   <br />
-                  Location: {selectedArticle.location}
+                  Location: {
+                    typeof selectedArticle.location === 'object' 
+                      ? `${(selectedArticle.location as Location).city || ''}, ${(selectedArticle.location as Location).state || ''} ${(selectedArticle.location as Location).country || ''}`.trim() 
+                      : String(selectedArticle.location)
+                  }
                 </>
               )}
             </p>
