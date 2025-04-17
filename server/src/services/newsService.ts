@@ -77,12 +77,12 @@ export class NewsService {
   /**
    * Fetch articles from Twitter
    * @param query Optional search query
-   * @returns Promise with array of articles
+   * @returns Promise with array of articles (MOCK DATA)
    */
   async fetchFromTwitter(query?: string): Promise<Article[]> {
-    // This is a placeholder implementation
+    // This is a placeholder implementation using MOCK DATA
     // In a real implementation, this would use the Twitter API
-    console.log(`Fetching from Twitter with query: ${query || 'none'}`);
+    console.debug(`[MOCK DATA] Fetching from Twitter with query: ${query || 'none'}`);
     
     // Mock data with articles at different orbital distances
     return [
@@ -134,12 +134,12 @@ export class NewsService {
   /**
    * Fetch articles from Washington Post
    * @param query Optional search query
-   * @returns Promise with array of articles
+   * @returns Promise with array of articles (MOCK DATA)
    */
   async fetchFromWashingtonPost(query?: string): Promise<Article[]> {
-    // This is a placeholder implementation
+    // This is a placeholder implementation using MOCK DATA
     // In a real implementation, this would use the Washington Post API
-    console.log(`Fetching from Washington Post with query: ${query || 'none'}`);
+    console.debug(`[MOCK DATA] Fetching from Washington Post with query: ${query || 'none'}`);
     
     // Mock data with articles at different orbital distances
     return [

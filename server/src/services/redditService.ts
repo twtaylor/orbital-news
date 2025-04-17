@@ -45,15 +45,14 @@ export class RedditService {
       const hasToday = await this.articleStore.hasTodaysArticles('reddit');
       
       if (!hasToday) {
-        console.log('No Reddit articles for today, fetching from API...');
         // This will trigger a fetch and store in the background
         this.fetchArticles().catch(err => {
           console.error('Error fetching initial Reddit articles:', err);
         });
       } else {
-        console.log('Found Reddit articles for today');
+        console.debug('Found Reddit articles for today');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error checking for today\'s articles:', error);
     }
   }
@@ -124,18 +123,16 @@ export class RedditService {
         });
         
         if (storedArticles.length > 0) {
-          console.log(`Using ${storedArticles.length} stored Reddit articles`);
           return storedArticles;
         }
       } catch (error) {
-        console.warn('Error retrieving stored articles:', error);
         // Continue with API fetch if store retrieval fails
       }
     }
     
     // Use mock data if credentials aren't available
     if (!this.clientId || !this.clientSecret) {
-      console.log('Using mock Reddit data (no API credentials)');
+      console.info('Using mock Reddit data (no API credentials)');
       const mockArticles = await this.getMockArticles();
       
       // Store mock articles if MongoDB is connected
@@ -147,6 +144,7 @@ export class RedditService {
     }
 
     try {
+      console.info(`Fetching articles from Reddit API...`);
       // Get access token
       const token = await this.getAccessToken();
       
@@ -168,7 +166,7 @@ export class RedditService {
           );
 
           if (!response.ok) {
-            console.warn(`Reddit API error for ${sub}: ${response.status} ${response.statusText}`);
+            console.warn(`Reddit API error for r/${sub}: ${response.status} ${response.statusText}`);
             return []; // Return empty array for this failed subreddit fetch
           }
 
@@ -178,7 +176,7 @@ export class RedditService {
           );
           return await Promise.all(articlePromises);
         } catch (err) {
-          console.warn(`Failed to fetch or process articles from ${sub}:`, err);
+          console.warn(`Failed to fetch or process articles from r/${sub}:`, err);
           return []; // Return empty array on error for this subreddit
         }
       });
@@ -189,14 +187,7 @@ export class RedditService {
       // Flatten the results into a single array of articles
       allArticles = results.flat();
      
-      // Log a sample article for debugging, but only when not in a test environment
-      if (allArticles.length > 0 && process.env.NODE_ENV !== 'test') {
-        console.log('Sample article with location:', {
-          title: allArticles[0].title.substring(0, 50) + '...',
-          location: allArticles[0].location,
-          tier: allArticles[0].tier
-        });
-      }
+      console.info(`Fetched ${allArticles.length} articles from Reddit API`);
       
       // Store the fetched articles if MongoDB is connected
       if (MongoManager.isConnected()) {

@@ -25,11 +25,11 @@ export class ArticleFetcherService {
    */
   public start(cronSchedule: string = '0 * * * *'): void {
     if (this.cronJob) {
-      console.log('Article fetcher already running, stopping previous job');
+      console.info('Article fetcher already running, stopping previous job');
       this.stop();
     }
 
-    console.log(`Starting article fetcher with schedule: ${cronSchedule}`);
+    console.info(`Starting article fetcher with schedule: ${cronSchedule}`);
     
     // Schedule the cron job
     this.cronJob = cron.schedule(cronSchedule, async () => {
@@ -49,7 +49,7 @@ export class ArticleFetcherService {
     if (this.cronJob) {
       this.cronJob.stop();
       this.cronJob = null;
-      console.log('Article fetcher stopped');
+      console.info('Article fetcher stopped');
     }
   }
 
@@ -58,7 +58,7 @@ export class ArticleFetcherService {
    */
   public async fetchAndStoreArticles(): Promise<void> {
     if (this.isRunning) {
-      console.log('Article fetch already in progress, skipping');
+      console.debug('Article fetch already in progress, skipping');
       return;
     }
 
@@ -66,27 +66,36 @@ export class ArticleFetcherService {
     this.fetchCount++;
     
     try {
-      console.log(`Starting article fetch #${this.fetchCount} at ${new Date().toISOString()}`);
+      console.info(`Starting article fetch #${this.fetchCount}`);
       
-      // Fetch articles from Reddit
+      // Fetch articles from Reddit (real data source)
       const redditArticles = await this.fetchFromSource('reddit');
       
-      // Fetch articles from other sources (these are currently mocked)
-      const twitterArticles = await this.fetchFromSource('twitter');
-      const washingtonPostArticles = await this.fetchFromSource('washington_post');
+      // Only store articles from real sources (currently only Reddit)
+      // We'll still fetch mock data for display purposes but won't store it
+      const articlesToStore = [...redditArticles];
       
-      // Combine all articles
+      // Fetch articles from other sources (these are currently mocked)
+      // but don't store them in the database
+      const twitterArticles = await this.fetchFromSource('twitter', false);
+      const washingtonPostArticles = await this.fetchFromSource('washington_post', false);
+      
+      // Combine all articles for display purposes
       const allArticles = [
         ...redditArticles,
         ...twitterArticles,
         ...washingtonPostArticles
       ];
       
-      console.log(`Fetched ${allArticles.length} articles in total`);
+      console.info(`Fetched ${allArticles.length} articles (${redditArticles.length} from Reddit, ${twitterArticles.length} from Twitter, ${washingtonPostArticles.length} from Washington Post)`);
       
-      // Store articles in the database
-      const storedCount = await this.articleStore.storeArticles(allArticles);
-      console.log(`Stored ${storedCount} articles in the database`);
+      // Only store real articles in the database
+      if (articlesToStore.length > 0) {
+        const storedCount = await this.articleStore.storeArticles(articlesToStore);
+        console.info(`Stored ${storedCount} real articles in the database`);
+      } else {
+        console.info('No real articles to store in the database');
+      }
     } catch (error) {
       console.error('Error fetching and storing articles:', error);
     } finally {
@@ -97,18 +106,21 @@ export class ArticleFetcherService {
   /**
    * Fetch articles from a specific source
    * @param source Source to fetch articles from
+   * @param checkForExisting Whether to check if we already have today's articles from this source
    * @returns Array of articles
    */
-  private async fetchFromSource(source: string): Promise<Article[]> {
+  private async fetchFromSource(source: string, checkForExisting: boolean = true): Promise<Article[]> {
     try {
       console.log(`Fetching articles from ${source}`);
       
-      // Check if we already have today's articles from this source
-      const hasTodaysArticles = await this.articleStore.hasTodaysArticles(source);
-      
-      if (hasTodaysArticles) {
-        console.log(`Already have today's articles from ${source}, skipping fetch`);
-        return [];
+      // Check if we already have today's articles from this source (if requested)
+      if (checkForExisting) {
+        const hasTodaysArticles = await this.articleStore.hasTodaysArticles(source);
+        
+        if (hasTodaysArticles) {
+          console.log(`Already have today's articles from ${source}, skipping fetch`);
+          return [];
+        }
       }
       
       let articles: Article[] = [];
