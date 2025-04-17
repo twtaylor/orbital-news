@@ -216,7 +216,7 @@ function App() {
                   <br />
                   Location: {
                     typeof selectedArticle.location === 'object' 
-                      ? `${(selectedArticle.location as Location).city || ''}, ${(selectedArticle.location as Location).state || ''} ${(selectedArticle.location as Location).country || ''}`.trim() 
+                      ? `${(selectedArticle.location as Location).city || ''}, ${(selectedArticle.location as Location).state || ''} ${(selectedArticle.location as Location).country || ''}${(selectedArticle.location as Location).zipCode ? ` (${(selectedArticle.location as Location).zipCode})` : ''}`.trim() 
                       : String(selectedArticle.location)
                   }
                 </>

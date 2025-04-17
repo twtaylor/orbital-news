@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { Article, TierType } from '../types/models/article.type';
+import { Article, TierType, ArticleLocation } from '../types/models/article.type';
 
 // Interface for the MongoDB document that extends the Article interface
 // Use Omit to avoid conflicts between Article.id and Document._id
@@ -20,7 +20,18 @@ const ArticleSchema = new Schema(
     sourceUrl: { type: String },
     author: { type: String },
     publishedAt: { type: String, required: true },
-    location: { type: String, required: true },
+    location: { 
+      type: Schema.Types.Mixed, // Can be either String or ArticleLocation object
+      required: true,
+      validate: {
+        validator: function(v: string | ArticleLocation) {
+          // Valid if it's a string or an object with expected properties
+          return typeof v === 'string' || 
+                 (typeof v === 'object' && v !== null);
+        },
+        message: 'Location must be a string or a valid location object'
+      }
+    },
     tags: [{ type: String }],
     mass: { type: Number, required: true },
     tier: { 

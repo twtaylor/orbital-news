@@ -27,6 +27,9 @@ export interface Location {
   /** Longitude if available */
   longitude?: number;
   
+  /** Zip code if available */
+  zipCode?: string;
+  
   /** How many times this location was mentioned */
   mentions?: number;
 }

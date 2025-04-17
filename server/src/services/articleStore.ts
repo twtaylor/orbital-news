@@ -1,11 +1,17 @@
-import { Article, TierType } from '../types/models/article.type';
+import { Article, ArticleLocation, TierType } from '../types/models/article.type';
 import ArticleModel, { ArticleDocument } from '../models/ArticleSchema';
 import MongoManager from '../database/MongoManager';
+import { GeocodingService } from './geocodingService';
 
 /**
  * Service for storing and retrieving articles from MongoDB
  */
 export class ArticleStore {
+  private geocodingService: GeocodingService;
+  
+  constructor() {
+    this.geocodingService = new GeocodingService();
+  }
   /**
    * Store articles in the database
    * @param articles Articles to store
@@ -91,7 +97,19 @@ export class ArticleStore {
       const query: any = {};
       
       if (source) query.source = source;
-      if (location) query.location = location;
+      
+      // Handle location query - could be string or object with zipCode
+      if (location) {
+        // If searching for a specific location, we need to handle both string and object formats
+        query.$or = [
+          { location: location }, // Match exact string
+          { 'location.city': location }, // Match city in object
+          { 'location.state': location }, // Match state in object
+          { 'location.country': location }, // Match country in object
+          { 'location.zipCode': location } // Match zipCode in object
+        ];
+      }
+      
       if (tier) query.tier = tier;
       if (options.articleId) query.articleId = options.articleId; // Added articleId to query
       
@@ -124,7 +142,7 @@ export class ArticleStore {
           sourceUrl: docAny.sourceUrl,
           author: docAny.author,
           publishedAt: docAny.publishedAt,
-          location: docAny.location,
+          location: docAny.location, // This could be string or ArticleLocation object
           tags: docAny.tags,
           mass: docAny.mass,
           tier: docAny.tier as TierType

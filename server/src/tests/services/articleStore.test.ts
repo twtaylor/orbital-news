@@ -1,7 +1,7 @@
 import { ArticleStore } from '../../services/articleStore';
 import ArticleModel from '../../models/ArticleSchema';
 import MongoManager from '../../database/MongoManager';
-import { Article, TierType } from '../../types/models/article.type';
+import { Article, ArticleLocation, TierType } from '../../types/models/article.type';
 
 // Mock the ArticleModel
 jest.mock('../../models/ArticleSchema', () => {
@@ -15,7 +15,7 @@ jest.mock('../../models/ArticleSchema', () => {
     sourceUrl: '',
     author: '',
     publishedAt: '',
-    location: '',
+    location: '' as string | ArticleLocation,
     tags: [],
     mass: 0,
     tier: 'medium',
@@ -61,20 +61,41 @@ jest.mock('../../database/MongoManager', () => ({
 describe('ArticleStore', () => {
   let articleStore: ArticleStore;
   
-  // Sample article for testing
-  const sampleArticle: Article = {
-    id: 'test-article-1',
+  // Mock article data
+  const mockArticle: Article = {
+    id: 'test-123',
     title: 'Test Article',
     content: 'This is a test article content',
-    source: 'reddit',
-    sourceUrl: 'https://reddit.com/r/test/123',
-    author: 'testuser',
+    source: 'test-source',
+    sourceUrl: 'https://example.com/test',
+    author: 'Test Author',
     publishedAt: new Date().toISOString(),
-    location: 'New York',
-    tags: ['test', 'sample'],
-    mass: 150000,
-    tier: 'medium' as TierType,
-    
+    location: 'Test Location',
+    tags: ['test', 'article'],
+    mass: 50000,
+    tier: 'medium'
+  };
+  
+  // Mock article with structured location
+  const mockArticleWithStructuredLocation: Article = {
+    id: 'test-456',
+    title: 'Test Article with Structured Location',
+    content: 'This is a test article with structured location data',
+    source: 'test-source',
+    sourceUrl: 'https://example.com/test2',
+    author: 'Test Author',
+    publishedAt: new Date().toISOString(),
+    location: {
+      city: 'San Francisco',
+      state: 'California',
+      country: 'United States',
+      zipCode: '94103',
+      lat: 37.7749,
+      lng: -122.4194
+    },
+    tags: ['test', 'article', 'location'],
+    mass: 60000,
+    tier: 'close'
   };
   
   // Sample article from database (with MongoDB fields)
@@ -115,11 +136,11 @@ describe('ArticleStore', () => {
       (ArticleModel.findOne as jest.Mock).mockResolvedValue(null);
       
       // Call the method
-      const result = await articleStore.storeArticles([sampleArticle]);
+      const result = await articleStore.storeArticles([mockArticle]);
       
       // Verify results
       expect(result).toBe(1); // 1 article stored
-      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: sampleArticle.id });
+      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: mockArticle.id });
       // Verify that a new ArticleModel was created
       expect(ArticleModel).toHaveBeenCalled();
     });
@@ -129,11 +150,11 @@ describe('ArticleStore', () => {
       (ArticleModel.findOne as jest.Mock).mockResolvedValue(sampleDbArticle);
       
       // Call the method
-      const result = await articleStore.storeArticles([sampleArticle]);
+      const result = await articleStore.storeArticles([mockArticle]);
       
       // Verify results
       expect(result).toBe(1); // 1 article updated
-      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: sampleArticle.id });
+      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: mockArticle.id });
       expect(sampleDbArticle.save).toHaveBeenCalled();
     });
     
@@ -142,7 +163,7 @@ describe('ArticleStore', () => {
       (MongoManager.isConnected as jest.Mock).mockReturnValue(false);
       
       // Call the method
-      const result = await articleStore.storeArticles([sampleArticle]);
+      const result = await articleStore.storeArticles([mockArticle]);
       
       // Verify results
       expect(result).toBe(0); // No articles stored
@@ -154,11 +175,11 @@ describe('ArticleStore', () => {
       (ArticleModel.findOne as jest.Mock).mockRejectedValue(new Error('Database error'));
       
       // Call the method
-      const result = await articleStore.storeArticles([sampleArticle]);
+      const result = await articleStore.storeArticles([mockArticle]);
       
       // Verify results
       expect(result).toBe(0); // No articles stored due to error
-      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: sampleArticle.id });
+      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: mockArticle.id });
     });
   });
   

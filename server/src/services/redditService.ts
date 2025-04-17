@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 import fetch from 'node-fetch';
-import { Article, TierType } from '../types/models/article.type';
+import { Article, ArticleLocation, TierType } from '../types/models/article.type';
 import { RedditTokenResponse, RedditPost, RedditPostData } from '../types/services/reddit.type';
 import { LocationService } from './locationService';
 import { ArticleStore } from './articleStore';
@@ -236,10 +236,9 @@ export class RedditService {
       sourceUrl: post.url,
       author: post.author,
       publishedAt: new Date(post.created_utc * 1000).toISOString(),
-      location,
+      location, // Will be updated with structured location data if available
       mass: cappedMass,
       tier: massTier, // Will be updated if location-based tier is available
-      
     };
     
     // Try to extract location information and determine location-based tier
@@ -254,7 +253,24 @@ export class RedditService {
       
       // Set the location if we found one with reasonable confidence
       if (locationResult.primaryLocation && locationResult.primaryLocation.confidence >= 0.4) {
-        article.location = locationResult.primaryLocation.name;
+        // Check if we have detailed location data (from geocoding)
+        if (locationResult.primaryLocation.latitude && locationResult.primaryLocation.longitude) {
+          // Create structured location object
+          const structuredLocation: ArticleLocation = {
+            city: locationResult.primaryLocation.city,
+            state: locationResult.primaryLocation.region,
+            country: locationResult.primaryLocation.country,
+            zipCode: locationResult.primaryLocation.zipCode,
+            lat: locationResult.primaryLocation.latitude,
+            lng: locationResult.primaryLocation.longitude
+          };
+          
+          // Set the structured location
+          article.location = structuredLocation;
+        } else {
+          // Fall back to simple location name if no geocoded data
+          article.location = locationResult.primaryLocation.name;
+        }
       } else if (!location) { // Only set to Global if we don't already have a location from flair
         article.location = "Global"; // Default if no location found
       }

@@ -31,9 +31,16 @@
     "sourceUrl": "https://example.com/financial-times/3",
     "author": "Sarah Williams",
     "publishedAt": "2025-04-12T09:15:00Z",
-    "location": "New York",
+    "location": {
+      "city": "Sydney",
+      "state": "New South Wales",
+      "country": "Australia",
+      "zipCode": "2000",
+      "lat": -33.8688,
+      "lng": 151.2093
+    },
     "tier": "far",
-    "mass": 200000
+    "mass": 225000
   },
   {
     "id": "mock-article-4",
@@ -45,8 +52,7 @@
     "publishedAt": "2025-04-13T16:45:00Z",
     "location": "Houston",
     "tier": "medium",
-    "mass": 175000,
- 
+    "mass": 175000
   },
   {
     "id": "mock-article-5",

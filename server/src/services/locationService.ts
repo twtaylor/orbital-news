@@ -106,8 +106,22 @@ export class LocationService {
     
     // Add geo data if requested
     if (includeGeoData && filteredLocations.length > 0) {
-      // This would call a geocoding service
-      // Left as a placeholder for future implementation
+      // Geocode the primary location to get coordinates and zip code
+      try {
+        const geocodedLocation = await this.geocodingService.geocodeLocation(primaryLocation?.name || '');
+        
+        if (geocodedLocation && primaryLocation) {
+          // Add geocoded data to the primary location
+          primaryLocation.latitude = geocodedLocation.coordinates.latitude;
+          primaryLocation.longitude = geocodedLocation.coordinates.longitude;
+          primaryLocation.zipCode = geocodedLocation.zipCode;
+          primaryLocation.city = geocodedLocation.city || primaryLocation.city;
+          primaryLocation.country = geocodedLocation.country || primaryLocation.country;
+          primaryLocation.region = geocodedLocation.state || primaryLocation.region;
+        }
+      } catch (error) {
+        console.warn('Error geocoding primary location:', error);
+      }
     }
     
     // Calculate distance and determine tier if we have a primary location
