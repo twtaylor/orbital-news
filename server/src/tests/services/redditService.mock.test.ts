@@ -89,7 +89,7 @@ class MockRedditService {
         tags: ['science', 'discovery', 'MIT'],
         mass: 120000,
         tier: 'medium' as TierType,
-        read: false
+        
       }
     ];
   }
@@ -131,7 +131,7 @@ describe('RedditService Mock Tests', () => {
         tags: ['test'],
         mass: 100000,
         tier: 'medium' as TierType,
-        read: false
+        
       };
       
       redditService['articleStore'].getArticles.mockResolvedValue([mockArticle]);

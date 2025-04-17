@@ -239,7 +239,7 @@ export class RedditService {
       location,
       mass: cappedMass,
       tier: massTier, // Will be updated if location-based tier is available
-      read: false
+      
     };
     
     // Try to extract location information and determine location-based tier
@@ -318,7 +318,7 @@ export class RedditService {
         location: '',  // Will be extracted as 'Cambridge, Massachusetts' (far from Oklahoma City)
         mass: 120000,
         tier: 'far' as TierType, // Initial tier, will be updated based on location distance
-        read: false
+        
       },
       {
         id: 'reddit-mock2',
@@ -331,7 +331,7 @@ export class RedditService {
         location: '',  // Will be extracted as 'San Francisco, California' (far from Oklahoma City)
         mass: 180000,
         tier: 'far' as TierType, // Initial tier, will be updated based on location distance
-        read: false
+        
       },
       {
         id: 'reddit-mock3',
@@ -344,7 +344,7 @@ export class RedditService {
         location: '',  // Will be extracted as 'Dallas, Texas' (close to Oklahoma City)
         mass: 90000,
         tier: 'close' as TierType, // Initial tier, will be updated based on location distance
-        read: false
+        
       }
     ];
     

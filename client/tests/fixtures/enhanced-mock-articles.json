@@ -15,8 +15,7 @@
       "country": "USA"
     },
     "tier": "close",
-    "mass": 100000,
-    "read": false
+    "mass": 100000
   },
   {
     "id": "mock-article-2",

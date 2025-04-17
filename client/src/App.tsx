@@ -85,8 +85,7 @@ function App() {
         sourceUrl: '',
         tier: 'close',
         mass: 100000,
-        location: 'Global',
-        read: false
+        location: 'Global'
       };
       
       // Set the mock article for demonstration

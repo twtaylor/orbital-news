@@ -53,7 +53,7 @@ describe('Location-based Tier Tests', () => {
       location: '',
       mass: 120000,
       tier: 'medium', // Initial tier based on mass
-      read: false
+      
     };
 
     // Step 1: Test location extraction

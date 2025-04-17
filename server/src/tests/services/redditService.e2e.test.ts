@@ -318,7 +318,7 @@ describe('RedditService E2E', () => {
         tags: ['today', 'article'],
         mass: 120000,
         tier: 'medium' as TierType,
-        read: false
+        
       }
     ];
     
@@ -367,7 +367,7 @@ describe('RedditService E2E', () => {
         tags: ['technology', 'AI'],
         mass: 150000,
         tier: 'medium' as TierType,
-        read: false
+        
       },
       {
         id: 'reddit-mock2',
@@ -381,7 +381,7 @@ describe('RedditService E2E', () => {
         tags: ['technology', 'product'],
         mass: 180000,
         tier: 'medium' as TierType,
-        read: false
+        
       }
     ];
     

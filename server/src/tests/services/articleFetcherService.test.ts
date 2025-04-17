@@ -32,7 +32,7 @@ describe('ArticleFetcherService', () => {
       tags: ['news', 'technology'],
       mass: 120000,
       tier: 'close',
-      read: false
+      
     }
   ];
 
@@ -49,7 +49,7 @@ describe('ArticleFetcherService', () => {
       tags: ['politics', 'news'],
       mass: 100000,
       tier: 'close',
-      read: false
+      
     }
   ];
 
@@ -66,7 +66,7 @@ describe('ArticleFetcherService', () => {
       tags: ['politics', 'news'],
       mass: 100000,
       tier: 'close',
-      read: false
+      
     }
   ];
 

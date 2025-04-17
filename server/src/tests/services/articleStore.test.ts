@@ -19,7 +19,7 @@ jest.mock('../../models/ArticleSchema', () => {
     tags: [],
     mass: 0,
     tier: 'medium',
-    read: false,
+    
     fetchedAt: new Date(),
   }));
   
@@ -74,7 +74,7 @@ describe('ArticleStore', () => {
     tags: ['test', 'sample'],
     mass: 150000,
     tier: 'medium' as TierType,
-    read: false
+    
   };
   
   // Sample article from database (with MongoDB fields)
@@ -91,7 +91,7 @@ describe('ArticleStore', () => {
     tags: ['test', 'sample'],
     mass: 150000,
     tier: 'medium',
-    read: false,
+    
     fetchedAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),

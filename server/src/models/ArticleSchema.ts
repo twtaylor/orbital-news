@@ -28,7 +28,6 @@ const ArticleSchema = new Schema(
       required: true, 
       enum: ['close', 'medium', 'far'] 
     },
-    read: { type: Boolean, default: false },
     fetchedAt: { type: Date, default: Date.now }
   },
   { 

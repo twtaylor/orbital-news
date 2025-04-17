@@ -38,7 +38,6 @@ export interface Article {
   tags?: string[];
   mass: number; // Based on source credibility and article length
   tier: TierType; // Orbital tier (close, medium, far)
-  read: boolean;
 }
 
 /**

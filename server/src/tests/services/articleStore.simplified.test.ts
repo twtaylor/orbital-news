@@ -48,7 +48,7 @@ describe('ArticleStore Simplified Tests', () => {
     tags: ['test', 'sample'],
     mass: 150000,
     tier: 'medium' as TierType,
-    read: false
+    
   };
   
   beforeEach(() => {

@@ -36,7 +36,7 @@ describe('LocationService', () => {
       mass: 150000,
       publishedAt: new Date().toISOString(),
       location: '', // This will be determined by our service
-      read: false,
+      
       tags: ['weather', 'emergency']
     };
 
@@ -74,7 +74,7 @@ describe('LocationService', () => {
       mass: 80000,
       publishedAt: new Date().toISOString(),
       location: '', // This will be determined by our service
-      read: false,
+      
       tags: ['climate', 'international']
     };
 
@@ -113,7 +113,7 @@ describe('LocationService', () => {
       mass: 220000,
       publishedAt: new Date().toISOString(),
       location: '', // This will be determined by our service
-      read: false,
+      
       tags: ['science', 'research']
     };
 

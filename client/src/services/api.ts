@@ -46,21 +46,5 @@ export const ArticleService = {
     }
   },
 
-  /**
-   * Mark an article as read
-   * @param id Article ID
-   * @returns Promise with the updated article
-   */
-  async markArticleAsRead(id: string): Promise<Article> {
-    try {
-      const response = await axios.patch<ArticleResponse>(`${API_URL}/articles/${id}/read`);
-      if (!response.data.data.article) {
-        throw new Error('Failed to update article');
-      }
-      return response.data.data.article;
-    } catch (error) {
-      console.error(`Error marking article ${id} as read:`, error);
-      throw error;
-    }
-  }
+  // markArticleAsRead method removed as we no longer track read status
 };

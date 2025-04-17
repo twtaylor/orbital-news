@@ -40,8 +40,7 @@ export class NewsService {
         location: 'Cambridge, MA',
         tags: ['science', 'technology', 'quantum'],
         mass: 120000,
-        tier: 'close',
-        read: false
+        tier: 'close'
       },
       {
         id: 'reddit-medium',
@@ -54,8 +53,7 @@ export class NewsService {
         location: 'Cape Canaveral, FL',
         tags: ['space', 'technology', 'spacex'],
         mass: 150000,
-        tier: 'medium',
-        read: false
+        tier: 'medium'
       },
       {
         id: 'reddit-far',
@@ -68,8 +66,7 @@ export class NewsService {
         location: 'Chile',
         tags: ['astronomy', 'exoplanet', 'science'],
         mass: 180000,
-        tier: 'far',
-        read: false
+        tier: 'far'
       }
     ];
   }
@@ -97,8 +94,7 @@ export class NewsService {
         location: 'San Francisco, CA',
         tags: ['technology', 'business', 'acquisition'],
         mass: 100000,
-        tier: 'close',
-        read: false
+        tier: 'close'
       },
       {
         id: 'twitter-medium',
@@ -111,8 +107,7 @@ export class NewsService {
         location: 'Palo Alto, CA',
         tags: ['ai', 'technology', 'research'],
         mass: 130000,
-        tier: 'medium',
-        read: false
+        tier: 'medium'
       },
       {
         id: 'twitter-far',
@@ -125,8 +120,7 @@ export class NewsService {
         location: 'Geneva, Switzerland',
         tags: ['climate', 'environment', 'science'],
         mass: 160000,
-        tier: 'far',
-        read: false
+        tier: 'far'
       }
     ];
   }
@@ -154,8 +148,7 @@ export class NewsService {
         location: 'Washington DC',
         tags: ['politics', 'policy', 'legislation'],
         mass: 150000,
-        tier: 'close',
-        read: false
+        tier: 'close'
       },
       {
         id: 'wapo-medium',
@@ -168,8 +161,7 @@ export class NewsService {
         location: 'New York, NY',
         tags: ['economics', 'inflation', 'markets'],
         mass: 140000,
-        tier: 'medium',
-        read: false
+        tier: 'medium'
       },
       {
         id: 'wapo-far',
@@ -182,8 +174,7 @@ export class NewsService {
         location: 'Brussels, Belgium',
         tags: ['international', 'diplomacy', 'politics'],
         mass: 170000,
-        tier: 'far',
-        read: false
+        tier: 'far'
       }
     ];
   }

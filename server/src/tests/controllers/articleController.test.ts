@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { 
   getArticles, 
   getArticleById, 
-  markArticleAsRead,
   getArticleFetcherStatus,
   triggerArticleFetch
 } from '../../controllers/articleController';
@@ -13,17 +12,14 @@ import { Article, TierType } from '../../types/models/article.type';
 // Mock the ArticleStore
 jest.mock('../../services/articleStore', () => {
   const mockGetArticles = jest.fn();
-  const mockMarkArticleAsRead = jest.fn();
   
   return {
     __esModule: true,
     default: jest.fn().mockImplementation(() => ({
-      getArticles: mockGetArticles,
-      markArticleAsRead: mockMarkArticleAsRead
+      getArticles: mockGetArticles
     })),
     // Export the mocks for direct access in tests
-    mockGetArticles,
-    mockMarkArticleAsRead
+    mockGetArticles
   };
 });
 
@@ -66,7 +62,7 @@ describe('ArticleController', () => {
       tags: ['news', 'test'],
       mass: 120000,
       tier: 'close' as TierType,
-      read: false
+      
     },
     {
       id: 'article-2',
@@ -80,7 +76,7 @@ describe('ArticleController', () => {
       tags: ['tech', 'test'],
       mass: 150000,
       tier: 'medium' as TierType,
-      read: false
+      
     }
   ];
   
@@ -272,73 +268,7 @@ describe('ArticleController', () => {
     });
   });
   
-  describe('markArticleAsRead', () => {
-    it('should mark an article as read', async () => {
-      // Set up request parameters
-      mockRequest.params = { id: 'article-1' };
-      
-      // Mock the getArticles method to return a specific article
-      mockGetArticles.mockResolvedValue([sampleArticles[0]]);
-      
-      // Mock the markArticleAsRead method to return the updated article
-      const updatedArticle = { ...sampleArticles[0], read: true };
-      mockMarkArticleAsRead.mockResolvedValue(updatedArticle);
-      
-      // Call the controller method
-      await markArticleAsRead(mockRequest as Request, mockResponse as Response);
-      
-      // Verify that the correct response was sent
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        status: 'success',
-        data: {
-          article: updatedArticle
-        }
-      });
-      
-      // Verify that markArticleAsRead was called with the correct parameters
-      expect(mockMarkArticleAsRead).toHaveBeenCalledWith('article-1');
-    });
-    
-    it('should return a 404 error if article is not found', async () => {
-      // Set up request parameters
-      mockRequest.params = { id: 'non-existent-article' };
-      
-      // Mock the getArticles method to return an empty array
-      mockGetArticles.mockResolvedValue([]);
-      
-      // Call the controller method
-      await markArticleAsRead(mockRequest as Request, mockResponse as Response);
-      
-      // Verify that the correct error response was sent
-      expect(mockResponse.status).toHaveBeenCalledWith(404);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        status: 'fail',
-        message: 'No article found with ID: non-existent-article'
-      });
-      
-      // Verify that markArticleAsRead was not called
-      expect(mockMarkArticleAsRead).not.toHaveBeenCalled();
-    });
-    
-    it('should handle errors when marking an article as read', async () => {
-      // Set up request parameters
-      mockRequest.params = { id: 'article-1' };
-      
-      // Mock the getArticles method to throw an error
-      mockGetArticles.mockRejectedValue(new Error('Database error'));
-      
-      // Call the controller method
-      await markArticleAsRead(mockRequest as Request, mockResponse as Response);
-      
-      // Verify that the correct error response was sent
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'Failed to update article'
-      });
-    });
-  });
+  // markArticleAsRead tests removed as we no longer track read status
   
   describe('getArticleFetcherStatus', () => {
     it('should return the article fetcher status', async () => {

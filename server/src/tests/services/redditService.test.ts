@@ -83,7 +83,7 @@ describe('RedditService', () => {
         tags: ['test', 'article'],
         mass: 120000,
         tier: 'medium' as TierType,
-        read: false
+        
       },
       {
         id: 'reddit-test2',
@@ -97,7 +97,7 @@ describe('RedditService', () => {
         tags: ['test', 'article'],
         mass: 180000,
         tier: 'medium' as TierType,
-        read: false
+        
       },
       {
         id: 'reddit-test3',
@@ -111,7 +111,7 @@ describe('RedditService', () => {
         tags: ['test', 'article'],
         mass: 90000,
         tier: 'far' as TierType,
-        read: false
+        
       }
     ];
     
@@ -242,7 +242,7 @@ describe('RedditService', () => {
         tags: ['test', 'article'],
         mass: 120000,
         tier: 'medium' as TierType,
-        read: false
+        
       },
       {
         id: 'reddit-test2',
@@ -256,7 +256,7 @@ describe('RedditService', () => {
         tags: ['test', 'article'],
         mass: 180000,
         tier: 'medium' as TierType,
-        read: false
+        
       },
       {
         id: 'reddit-test3',
@@ -270,7 +270,7 @@ describe('RedditService', () => {
         tags: ['test', 'article'],
         mass: 90000,
         tier: 'far' as TierType,
-        read: false
+        
       }
     ];
     
@@ -328,7 +328,7 @@ describe('RedditService', () => {
         location: 'Mock Location',
         mass: 100000,
         tier: 'medium' as const, // Type assertion to make TypeScript happy
-        read: false
+        
       }
     ];
     
@@ -354,7 +354,6 @@ describe('RedditService', () => {
     expect(firstArticle.location).toBe('Mock Location');
     expect(firstArticle.mass).toBe(100000);
     expect(firstArticle.tier).toBe('medium');
-    expect(firstArticle.read).toBe(false);
   }, 15000); // Add timeout directly to the test
 });
 

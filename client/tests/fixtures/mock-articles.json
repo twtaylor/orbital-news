@@ -9,8 +9,7 @@
     "publishedAt": "2025-04-10T12:00:00Z",
     "location": "San Francisco",
     "tier": "close",
-    "mass": 100000,
-    "read": false
+    "mass": 100000
   },
   {
     "id": "mock-article-2",
@@ -22,8 +21,7 @@
     "publishedAt": "2025-04-11T14:30:00Z",
     "location": "London",
     "tier": "medium",
-    "mass": 150000,
-    "read": false
+    "mass": 150000
   },
   {
     "id": "mock-article-3",
@@ -35,8 +33,7 @@
     "publishedAt": "2025-04-12T09:15:00Z",
     "location": "New York",
     "tier": "far",
-    "mass": 200000,
-    "read": false
+    "mass": 200000
   },
   {
     "id": "mock-article-4",
@@ -49,7 +46,7 @@
     "location": "Houston",
     "tier": "medium",
     "mass": 175000,
-    "read": false
+ 
   },
   {
     "id": "mock-article-5",
@@ -61,7 +58,6 @@
     "publishedAt": "2025-04-14T11:20:00Z",
     "location": "Berlin",
     "tier": "close",
-    "mass": 125000,
-    "read": false
+    "mass": 125000
   }
 ]

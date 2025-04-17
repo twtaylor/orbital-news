@@ -86,45 +86,7 @@ export const getArticleById = async (req: Request, res: Response): Promise<void>
   }
 };
 
-/**
- * Mark an article as read
- * @route PATCH /api/articles/:id/read
- */
-export const markArticleAsRead = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    
-    // Get the article from the database
-    const articles = await articleStore.getArticles({
-      articleId: id,
-      limit: 1
-    });
-    
-    if (articles.length === 0) {
-      res.status(404).json({
-        status: 'fail',
-        message: `No article found with ID: ${id}`
-      });
-      return;
-    }
-    
-    // Mark as read in the database
-    const updatedArticle = await articleStore.markArticleAsRead(id);
-    
-    res.status(200).json({
-      status: 'success',
-      data: {
-        article: updatedArticle
-      }
-    });
-  } catch (error) {
-    console.error('Error in markArticleAsRead:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to update article'
-    });
-  }
-};
+// markArticleAsRead controller method removed as we no longer track read status
 
 /**
  * Get article fetcher status
