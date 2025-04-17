@@ -78,7 +78,11 @@ export class Planet {
     this.planet = new THREE.Mesh(geometry, material);
     this.planet.position.set(this.pos.x, this.pos.y, this.pos.z);
     this.planet.name = this.name;
-    this.planet.userData = { id: this.id };
+    this.planet.userData = { 
+      id: this.id,
+      planetId: this.id,
+      article: this.article
+    };
 
     // Add to the static list of planets
     Planet.planets.push(this);
@@ -167,18 +171,26 @@ export class Planet {
 
     // Create a texture from the canvas
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture });
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    
+    // Create a sprite with the texture
     this.label = new THREE.Sprite(material);
     
     // Position the label above the planet
-    // Scale based on planet radius but maintain aspect ratio of the canvas
-    const labelScale = this.radius * 6; // Slightly larger base scale
-    const aspectRatio = canvas.width / canvas.height;
-    this.label.scale.set(labelScale * aspectRatio, labelScale, 1);
+    const labelScale = this.radius * 6; // Increased from 5x to 6x for better visibility
+    this.label.scale.set(labelScale * canvas.width / canvas.height, labelScale, 1);
     
-    // Position higher above the planet to accommodate more text
-    this.label.position.set(this.pos.x, this.pos.y + this.radius * 2.5, this.pos.z);
+    // Position the label above the planet (increased from 1.5x to 2.5x radius)
+    const labelHeight = this.radius * 2.5;
+    this.label.position.set(this.pos.x, this.pos.y + labelHeight, this.pos.z);
     
+    // Set userData for click detection
+    this.label.userData = {
+      planetId: this.id,
+      article: this.article
+    };
+    
+    // Add the label to the scene
     scene.add(this.label);
   }
 
@@ -251,8 +263,8 @@ export class Planet {
    */
   updatePosition(): void {
     if (!this.fixed) {
-      // Apply a time factor to speed up the simulation
-      const timeScale = 1.2; // Time scale as per user preference
+      // Apply a time factor to control simulation speed
+      const timeScale = 0.5; // Reduced from 1.2 to slow down the simulation
       const scaledVelocity = this.vel.mul(timeScale);
       this.pos = this.pos.add(scaledVelocity);
       
@@ -448,30 +460,30 @@ export class Planet {
     // Clamp radius between min and max values
     return Math.max(minRadius, Math.min(maxRadius, baseRadius));
   }
-
+  
   /**
-   * Create a planet from an article
+   * Get color based on tier
    */
-  static fromArticle(article: Article, scene: THREE.Scene): Planet {
-    // Get color based on tier instead of source
-    const getColorFromTier = (tier: string): number => {
-      switch (tier) {
-        case 'close':
-          return 0x00ff00; // Green for close
-        case 'medium':
-          return 0x0000ff; // Blue for medium
-        case 'far':
-          return 0xff0000; // Red for far
-        default:
-          return 0xffffff; // White for unknown tier
-      }
-    };
-    
-    // Get orbital tier constants
-    
+  static getColorFromTier(tier: string): number {
+    switch (tier) {
+      case 'close':
+        return 0x00ff00; // Green for close
+      case 'medium':
+        return 0x0000ff; // Blue for medium
+      case 'far':
+        return 0xff0000; // Red for far
+      default:
+        return 0xffffff; // White for unknown tier
+    }
+  }
+  
+  /**
+   * Calculate position and velocity based on tier
+   */
+  static calculatePositionAndVelocity(tier: string): { posX: number, posY: number, posZ: number, velX: number, velY: number, velZ: number } {
     // Get base distance from tier
     let baseDistance: number;
-    switch (article.tier) {
+    switch (tier) {
       case 'close':
         baseDistance = OrbitalTier.CLOSE;
         break;
@@ -516,32 +528,43 @@ export class Planet {
     
     // Add a small random vertical velocity component for variety
     const velY = (Math.random() - 0.5) * 0.01;
-
-    // Create a new planet
+    
+    return { posX, posY, posZ, velX, velY, velZ };
+  }
+  
+  /**
+   * Create a planet from an article
+   */
+  static fromArticle(article: Article, scene: THREE.Scene): Planet {
+    // Calculate position based on tier
+    const { posX, posY, posZ, velX, velY, velZ } = Planet.calculatePositionAndVelocity(article.tier);
+    
+    // Create the planet
     const planet = new Planet(
       article.id,
-      // Display up to 50 words of the title
-      article.title.split(' ').length > 50 ? 
-        article.title.split(' ').slice(0, 50).join(' ') + '...' : 
-        article.title,
-      posX,
-      posY,
-      posZ,
-      velX, // Initial tangential velocity x
-      velY, // Small random vertical velocity
-      velZ, // Initial tangential velocity z
-      article.mass,
-      Planet.calculateRadiusFromContent(article), // Scale radius based on content length
-      getColorFromTier(article.tier),
+      article.title,
+      posX, posY, posZ,
+      velX, velY, velZ,
+      article.mass || 1000, // Default mass if not specified
+      Planet.calculateRadiusFromContent(article),
+      Planet.getColorFromTier(article.tier),
       false, // Not fixed
       false, // Not followed
       article
     );
-
-    // Add the planet to the scene
+    
+    // Store the article data for selection
+    planet.article = article;
+    
+    // Store article data in the mesh for raycasting
+    planet.planet.userData.article = article;
+    
+    // Add to scene
     scene.add(planet.planet);
+    
+    // Create label
     planet.createLabel(scene);
-
+    
     return planet;
   }
 }

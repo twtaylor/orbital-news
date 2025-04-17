@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Planet } from './Planet';
 import { ArticleService } from '../services/api';
 import { Starfield } from './Starfield';
+import { Article } from '../types/Article';
 
 /**
  * OrbitalSystem class to manage the Three.js scene and planets
@@ -35,10 +36,28 @@ export class OrbitalSystem {
   // Starfield
   starfield?: Starfield;
   
+  // Callbacks
+  onArticleSelect?: (article: Article) => void;
+  onArticleHover?: (article: Article | null) => void;
+  
+  // Raycaster for object selection
+  raycaster: THREE.Raycaster;
+  pointer: THREE.Vector2;
+  
+  // Hover state
+  hoveredArticleId: string | null = null;
+  hoveredPlanet: Planet | null = null;
+  
   /**
    * Create a new orbital system
    */
-  constructor(container: HTMLElement) {
+  constructor(
+    container: HTMLElement, 
+    onArticleSelect?: (article: Article) => void,
+    onArticleHover?: (article: Article | null) => void
+  ) {
+    this.onArticleSelect = onArticleSelect;
+    this.onArticleHover = onArticleHover;
     this.container = container;
     
     // Create scene
@@ -72,8 +91,16 @@ export class OrbitalSystem {
     this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
     this.renderer.domElement.addEventListener('wheel', this.handleWheel, { passive: false });
     this.renderer.domElement.addEventListener('touchstart', this.handleTouchStart);
-    this.renderer.domElement.addEventListener('touchmove', this.handleTouchMove);
-    this.renderer.domElement.addEventListener('touchend', this.handleTouchEnd);
+    this.renderer.domElement.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+    this.renderer.domElement.addEventListener('touchend', this.handleMouseUp);
+    this.renderer.domElement.addEventListener('click', this.handleClick);
+    
+    // Set cursor style to indicate interactivity
+    this.renderer.domElement.style.cursor = 'default';
+    
+    // Initialize raycaster for object selection
+    this.raycaster = new THREE.Raycaster();
+    this.pointer = new THREE.Vector2();
     
     // Add grid for reference - expanded to accommodate the furthest orbits (30 units)
     const gridHelper = new THREE.GridHelper(80, 80, 0x555555, 0x333333);
@@ -182,18 +209,101 @@ export class OrbitalSystem {
    * Handle mouse move event
    */
   handleMouseMove = (event: MouseEvent): void => {
-    if (!this.isDragging) return;
+    // Update mouse position for raycasting
+    this.pointer.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
+    this.pointer.y = -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
     
-    const deltaX = event.clientX - this.previousMousePosition.x;
-    const deltaY = event.clientY - this.previousMousePosition.y;
+    // Handle camera rotation if dragging
+    if (this.isDragging) {
+      const deltaX = event.clientX - this.previousMousePosition.x;
+      const deltaY = event.clientY - this.previousMousePosition.y;
+      
+      // Rotate the camera around the center
+      this.rotateCamera(deltaX, deltaY);
+      
+      this.previousMousePosition = {
+        x: event.clientX,
+        y: event.clientY
+      };
+    }
+    // We don't need to call checkHover here since it's now called in the animation loop
+  };
+  
+  /**
+   * Check if the mouse is hovering over a planet
+   */
+  checkHover = (): void => {
+    // Update the raycaster with current pointer position
+    this.raycaster.setFromCamera(this.pointer, this.camera);
     
-    // Rotate the camera around the center
-    this.rotateCamera(deltaX, deltaY);
+    // Increase the precision of the raycaster
+    this.raycaster.params.Line.threshold = 0.1;
+    this.raycaster.params.Points.threshold = 0.1;
     
-    this.previousMousePosition = {
-      x: event.clientX,
-      y: event.clientY
-    };
+    // Get all intersecting objects, not just the first one
+    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    
+    // Check if hovering over something
+    if (intersects.length > 0) {
+      // Try to find the planet from the hovered object
+      let hoveredPlanet = null;
+      
+      // Check each intersection (not just the first one)
+      for (const intersection of intersects) {
+        const hoveredObject = intersection.object;
+        
+        // Check all planets to see if we're hovering over one of them or their labels
+        for (const planet of Planet.planets) {
+          // Skip the sun
+          if (planet.name === 'Local Group News') continue;
+          
+          // Check if we're hovering over the planet mesh
+          if (hoveredObject === planet.planet) {
+            hoveredPlanet = planet;
+            break;
+          }
+          
+          // Check if we're hovering over the planet's label
+          if (planet.label && hoveredObject === planet.label) {
+            hoveredPlanet = planet;
+            break;
+          }
+          
+          // Check if we're hovering over a child of the planet mesh
+          if (hoveredObject.parent && hoveredObject.parent === planet.planet) {
+            hoveredPlanet = planet;
+            break;
+          }
+        }
+        
+        // If we found a planet, no need to check other intersections
+        if (hoveredPlanet) break;
+      }
+      
+      // If we found a planet with an article, trigger hover
+      if (hoveredPlanet && hoveredPlanet.article) {
+        // Change cursor to pointer
+        this.renderer.domElement.style.cursor = 'pointer';
+        
+        // Call the hover callback if it exists and the hovered article has changed
+        if (this.onArticleHover && (!this.hoveredPlanet || hoveredPlanet.id !== this.hoveredPlanet.id)) {
+          console.log('Hovering over planet:', hoveredPlanet.name);
+          this.onArticleHover(hoveredPlanet.article);
+          this.hoveredPlanet = hoveredPlanet;
+        }
+        
+        return;
+      }
+    }
+    
+    // If we get here, we're not hovering over any planet
+    this.renderer.domElement.style.cursor = 'default';
+    
+    // Clear hover state if previously hovering
+    if (this.hoveredPlanet && this.onArticleHover) {
+      this.onArticleHover(null);
+      this.hoveredPlanet = null;
+    }
   };
   
   /**
@@ -325,13 +435,92 @@ export class OrbitalSystem {
   }
   
   /**
-   * Toggle pause state
+   * Toggle pause state or set to specific state
+   * @param forcePause Optional parameter to force a specific pause state
    * @returns The new pause state
    */
-  togglePause(): boolean {
-    this.isPaused = !this.isPaused;
+  togglePause(forcePause?: boolean): boolean {
+    if (forcePause !== undefined) {
+      this.isPaused = forcePause;
+    } else {
+      this.isPaused = !this.isPaused;
+    }
     return this.isPaused;
   }
+  
+  /**
+   * Set the currently hovered article ID
+   * @param articleId The ID of the hovered article, or null if none
+   */
+  setHoveredArticleId(articleId: string | null): void {
+    this.hoveredArticleId = articleId;
+    
+    // Find the corresponding planet
+    if (articleId) {
+      this.hoveredPlanet = Planet.planets.find(p => p.id === articleId) || null;
+    } else {
+      this.hoveredPlanet = null;
+    }
+  }
+
+  /**
+   * Handle click event for article selection
+   */
+  handleClick = (event: MouseEvent): void => {
+    // Get the mouse position
+    this.pointer.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
+    this.pointer.y = -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
+    
+    // Update the raycaster
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    
+    // Get the intersecting objects - check all scene children and their descendants
+    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    
+    // Check if something was clicked
+    if (intersects.length > 0) {
+      console.log('Clicked on something:', intersects[0].object);
+      
+      // Try to find the planet from the clicked object
+      let clickedPlanet = null;
+      const clickedObject = intersects[0].object;
+      
+      // Check all planets to see if we clicked on one of them or their labels
+      for (const planet of Planet.planets) {
+        // Skip the sun
+        if (planet.name === 'Local Group News') continue;
+        
+        // Check if we clicked on the planet mesh
+        if (clickedObject === planet.planet) {
+          clickedPlanet = planet;
+          break;
+        }
+        
+        // Check if we clicked on the planet's label
+        if (planet.label && clickedObject === planet.label) {
+          clickedPlanet = planet;
+          break;
+        }
+        
+        // Check if we clicked on a child of the planet mesh
+        if (clickedObject.parent && clickedObject.parent === planet.planet) {
+          clickedPlanet = planet;
+          break;
+        }
+      }
+      
+      // If we found a planet with an article, select it
+      if (clickedPlanet && clickedPlanet.article) {
+        console.log('Selected planet:', clickedPlanet.name);
+        console.log('Article:', clickedPlanet.article);
+        
+        // Call the article selection callback
+        if (this.onArticleSelect) {
+          this.onArticleSelect(clickedPlanet.article);
+        }
+      }
+    }
+  };
 
   /**
    * Animation loop
@@ -339,15 +528,40 @@ export class OrbitalSystem {
   animate = (): void => {
     this.animationId = requestAnimationFrame(this.animate);
     
+    // Check for hover in every frame if not dragging
+    if (!this.isDragging) {
+      this.checkHover();
+    }
+    
     // Only update planet positions if not paused
     if (!this.isPaused) {
-      // Update all planets
+      // Update all planets, with special handling for hovered planet
       for (let i = 0; i < Planet.planets.length; i++) {
-        Planet.planets[i].updateVelocity();
-        Planet.planets[i].updatePosition();
+        const planet = Planet.planets[i];
+        
+        // Update velocity for all planets
+        planet.updateVelocity();
+        
+        // If this is the hovered planet, update position at 1/5 speed
+        if (this.hoveredArticleId && planet.id === this.hoveredArticleId) {
+          // Store original velocity
+          const originalVel = planet.vel.clone();
+          
+          // Set temporary slower velocity
+          planet.vel = planet.vel.mul(0.2);
+          
+          // Update position with slower velocity
+          planet.updatePosition();
+          
+          // Restore original velocity
+          planet.vel = originalVel;
+        } else {
+          // Normal update for non-hovered planets
+          planet.updatePosition();
+        }
         
         if (Planet.collisionSystem) {
-          Planet.planets[i].collisionDetection(this.scene);
+          planet.collisionDetection(this.scene);
         }
       }
     }
@@ -390,10 +604,11 @@ export class OrbitalSystem {
     this.renderer.domElement.removeEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.removeEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.removeEventListener('mouseup', this.handleMouseUp);
-    this.renderer.domElement.removeEventListener('wheel', this.handleWheel);
     this.renderer.domElement.removeEventListener('touchstart', this.handleTouchStart);
     this.renderer.domElement.removeEventListener('touchmove', this.handleTouchMove);
-    this.renderer.domElement.removeEventListener('touchend', this.handleTouchEnd);
+    this.renderer.domElement.removeEventListener('touchend', this.handleMouseUp);
+    this.renderer.domElement.removeEventListener('wheel', this.handleWheel);
+    this.renderer.domElement.removeEventListener('click', this.handleClick);
     
     // Remove renderer from DOM
     if (this.container.contains(this.renderer.domElement)) {

@@ -1,23 +1,64 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import './App.css';
 import { OrbitalSystem } from './utils/OrbitalSystem';
 import { Article } from './types/Article';
-import './App.css';
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const orbitalSystemRef = useRef<OrbitalSystem | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [hoveredArticle, setHoveredArticle] = useState<Article | null>(null);
+  const [articleHistory, setArticleHistory] = useState<Article[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [zipCode, setZipCode] = useState('20001'); // Default to DC
-  const [searchQuery, setSearchQuery] = useState('');
   const [isPaused, setIsPaused] = useState(false);
+  const [showFullContent, setShowFullContent] = useState(false);
+  
+  // Handle article hover with useCallback
+  const handleArticleHover = useCallback((article: Article | null) => {
+    setHoveredArticle(article);
+    
+    // If hovering over an article, slow down that specific planet
+    if (orbitalSystemRef.current && article) {
+      orbitalSystemRef.current.setHoveredArticleId(article.id);
+    } else if (orbitalSystemRef.current) {
+      orbitalSystemRef.current.setHoveredArticleId(null);
+    }
+  }, []);
+  
+  // Handle article selection with useCallback to prevent recreation on every render
+  const handleArticleSelect = useCallback((article: Article) => {
+    // Always pause the simulation when an article is selected
+    if (orbitalSystemRef.current) {
+      orbitalSystemRef.current.togglePause(true); // Force pause
+      setIsPaused(true);
+    }
+    
+    // Set the selected article
+    setSelectedArticle(article);
+    
+    // Add to article history if not already present
+    setArticleHistory(prev => {
+      if (!prev.some(a => a.id === article.id)) {
+        return [article, ...prev];
+      }
+      return prev;
+    });
+    
+    // Open the menu panel
+    setIsMenuOpen(true);
+  }, []);
 
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // 'h' key to pause/resume the simulation
       if (event.key === 'h' || event.key === 'H') {
-        handlePauseToggle();
+        // Only toggle pause, don't reset camera
+        if (orbitalSystemRef.current) {
+          const newPauseState = orbitalSystemRef.current.togglePause();
+          setIsPaused(newPauseState);
+        }
       }
     };
 
@@ -32,7 +73,7 @@ function App() {
 
   // Initialize the orbital system
   useEffect(() => {
-    if (containerRef.current && !orbitalSystemRef.current) {
+    if (containerRef.current) {
       // Create a mock article for demonstration purposes
       // This can be removed once real article selection is implemented
       const mockArticle: Article = {
@@ -50,8 +91,13 @@ function App() {
       
       // Set the mock article for demonstration
       setSelectedArticle(mockArticle);
+      setArticleHistory([mockArticle]);
       
-      orbitalSystemRef.current = new OrbitalSystem(containerRef.current);
+      orbitalSystemRef.current = new OrbitalSystem(
+        containerRef.current, 
+        handleArticleSelect,
+        handleArticleHover
+      );
       
       // Load initial articles
       orbitalSystemRef.current.loadArticles(zipCode);
@@ -64,21 +110,14 @@ function App() {
         orbitalSystemRef.current = null;
       }
     };
-  }, [zipCode]);
+  }, [zipCode, handleArticleSelect, handleArticleHover]);
 
   // Note: Article selection is currently handled internally by the OrbitalSystem
-
-  // Handle search
-  const handleSearch = () => {
-    if (orbitalSystemRef.current) {
-      orbitalSystemRef.current.loadArticles(zipCode, searchQuery);
-    }
-  };
 
   // Handle refresh
   const handleRefresh = () => {
     if (orbitalSystemRef.current) {
-      orbitalSystemRef.current.loadArticles(zipCode, searchQuery);
+      orbitalSystemRef.current.loadArticles(zipCode);
     }
   };
 
@@ -95,10 +134,27 @@ function App() {
       {/* Orbital visualization container */}
       <div ref={containerRef} className="orbital-container"></div>
 
+      {/* Hovered article HUD display */}
+      {hoveredArticle && (
+        <div className="article-hud">
+          <div className="article-hud-title">{hoveredArticle.title}</div>
+          <div className="article-hud-source">{hoveredArticle.source}</div>
+        </div>
+      )}
+
       {/* Menu toggle button */}
       <button 
         className="menu-toggle" 
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        onClick={() => {
+          const newMenuState = !isMenuOpen;
+          setIsMenuOpen(newMenuState);
+          
+          // Resume simulation when menu is closed
+          if (!newMenuState && isPaused && orbitalSystemRef.current) {
+            const newPauseState = orbitalSystemRef.current.togglePause();
+            setIsPaused(newPauseState);
+          }
+        }}
       >
         {isMenuOpen ? '×' : '☰'}
       </button>
@@ -117,7 +173,7 @@ function App() {
         <h1>Local Group News</h1>
         
         <div className="search-section">
-          <h2>Search</h2>
+          <h2>Location</h2>
           <div className="input-group">
             <label htmlFor="zipCode">Zip Code:</label>
             <input 
@@ -129,19 +185,23 @@ function App() {
             />
           </div>
           
-          <div className="input-group">
-            <label htmlFor="searchQuery">Search:</label>
-            <input 
-              id="searchQuery"
-              type="text" 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Enter search terms"
-            />
+          <button onClick={handleRefresh}>Load Articles</button>
+        </div>
+        
+        <div className="article-history">
+          <h2>Article History</h2>
+          <div className="article-list">
+            {articleHistory.map((article) => (
+              <div 
+                key={article.id} 
+                className={`article-item ${selectedArticle?.id === article.id ? 'selected' : ''}`}
+                onClick={() => setSelectedArticle(article)}
+              >
+                <div className="article-title">{article.title}</div>
+                <div className="article-source">{article.source}</div>
+              </div>
+            ))}
           </div>
-          
-          <button onClick={handleSearch}>Search</button>
-          <button onClick={handleRefresh}>Refresh</button>
         </div>
 
         {selectedArticle && (
@@ -152,20 +212,49 @@ function App() {
               {selectedArticle.author && ` | By: ${selectedArticle.author}`}
               <br />
               Published: {new Date(selectedArticle.publishedAt).toLocaleDateString()}
+              {selectedArticle.location && (
+                <>
+                  <br />
+                  Location: {selectedArticle.location}
+                </>
+              )}
             </p>
             <div className="article-content">
-              {selectedArticle.content}
+              {showFullContent || selectedArticle.content.length <= 300 
+                ? selectedArticle.content 
+                : (
+                  <>
+                    {selectedArticle.content.substring(0, 300)}...
+                    <button 
+                      className="read-more-button" 
+                      onClick={() => setShowFullContent(true)}
+                    >
+                      Read More
+                    </button>
+                  </>
+                )
+              }
             </div>
-            {selectedArticle.sourceUrl && (
-              <a 
-                href={selectedArticle.sourceUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="source-link"
-              >
-                Read Original
-              </a>
-            )}
+            <div className="article-actions">
+              {selectedArticle.sourceUrl && (
+                <a 
+                  href={selectedArticle.sourceUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="source-link"
+                >
+                  Read Original
+                </a>
+              )}
+              {showFullContent && selectedArticle.content.length > 300 && (
+                <button 
+                  className="collapse-button" 
+                  onClick={() => setShowFullContent(false)}
+                >
+                  Collapse
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
