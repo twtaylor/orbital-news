@@ -54,6 +54,7 @@ temp/
 orbital-news-client.tar.gz
 orbital-news-server.tar.gz
 package-tmp/
+deploy-tmp/
 
 # Tests
 client/test-results/*

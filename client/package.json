@@ -8,7 +8,7 @@
     "build:prod": "tsc && vite build --mode production",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "package": "pnpm build:prod || (echo 'Using existing build' && tar -czf orbital-news-client.tar.gz -C dist .)",
+    "package": "pnpm build:prod && tar -czf orbital-news-client.tar.gz -C dist . || (echo 'Using existing build' && tar -czf orbital-news-client.tar.gz -C dist .)",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
