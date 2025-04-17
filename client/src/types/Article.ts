@@ -18,7 +18,7 @@ export interface Position {
 export interface Article {
   id: string;
   title: string;
-  content: string;
+  content?: string; // Made optional to match server changes
   source: string;
   sourceUrl?: string;
   author?: string;

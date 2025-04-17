@@ -233,76 +233,119 @@ export class OrbitalSystem {
    * Check if the mouse is hovering over a planet
    */
   checkHover = (): void => {
-    // Update the raycaster with current pointer position
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    
-    // Increase the precision of the raycaster
-    this.raycaster.params.Line.threshold = 0.1;
-    this.raycaster.params.Points.threshold = 0.1;
-    
-    // Get all intersecting objects, not just the first one
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-    
-    // Check if hovering over something
-    if (intersects.length > 0) {
-      // Try to find the planet from the hovered object
+    try {
+      // Update the raycaster with the current mouse position
+      this.raycaster.setFromCamera(this.pointer, this.camera);
+      
+      // Increase the precision of the raycaster
+      this.raycaster.params.Line.threshold = 0.2; // Increase threshold for better detection
+      this.raycaster.params.Points.threshold = 0.2;
+      
+      // Get intersections with all objects in the scene
+      // Use a larger precision value to make hover detection more forgiving
+      const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+      
+      // Reset hover state for all planets
       let hoveredPlanet = null;
       
-      // Check each intersection (not just the first one)
-      for (const intersection of intersects) {
-        const hoveredObject = intersection.object;
-        
-        // Check all planets to see if we're hovering over one of them or their labels
-        for (const planet of Planet.planets) {
-          // Skip the sun
-          if (planet.name === 'Local Group News') continue;
+      // Check if we're hovering over a planet by examining all intersections
+      // This is more reliable than just checking the first intersection
+      if (intersects.length > 0) {
+        // Check all intersections, not just the first one
+        for (const intersection of intersects) {
+          const hoveredObject = intersection.object;
           
-          // Check if we're hovering over the planet mesh
-          if (hoveredObject === planet.planet) {
-            hoveredPlanet = planet;
-            break;
+          // Find which planet was hovered (if any)
+          for (const planet of Planet.planets) {
+            // Skip the sun
+            if (planet.name === 'Local Group News') continue;
+            
+            // Check if we hovered on the planet mesh
+            if (hoveredObject === planet.planet) {
+              hoveredPlanet = planet;
+              break;
+            }
+            
+            // Check if we hovered on the planet's label
+            if (planet.label && hoveredObject === planet.label) {
+              hoveredPlanet = planet;
+              break;
+            }
+            
+            // Check if we hovered on a child of the planet mesh
+            if (hoveredObject.parent && hoveredObject.parent === planet.planet) {
+              hoveredPlanet = planet;
+              break;
+            }
+            
+            // Additional check: check if we're close to the planet (more forgiving)
+            if (intersection.distance < 5 && hoveredObject.type === 'Mesh') {
+              // Get the planet's position
+              const planetPos = new THREE.Vector3();
+              planet.planet.getWorldPosition(planetPos);
+              
+              // Get the intersection point
+              const intersectionPoint = intersection.point;
+              
+              // Calculate distance between intersection point and planet
+              const distance = planetPos.distanceTo(intersectionPoint);
+              
+              // If we're close enough to the planet, consider it hovered
+              if (distance < planet.radius * 1.5) {
+                hoveredPlanet = planet;
+                break;
+              }
+            }
           }
           
-          // Check if we're hovering over the planet's label
-          if (planet.label && hoveredObject === planet.label) {
-            hoveredPlanet = planet;
-            break;
-          }
-          
-          // Check if we're hovering over a child of the planet mesh
-          if (hoveredObject.parent && hoveredObject.parent === planet.planet) {
-            hoveredPlanet = planet;
-            break;
-          }
+          // If we found a planet, no need to check more intersections
+          if (hoveredPlanet) break;
         }
-        
-        // If we found a planet, no need to check other intersections
-        if (hoveredPlanet) break;
       }
       
-      // If we found a planet with an article, trigger hover
+      // Update the HUD if we're hovering over a planet with an article
       if (hoveredPlanet && hoveredPlanet.article) {
         // Change cursor to pointer
         this.renderer.domElement.style.cursor = 'pointer';
         
-        // Call the hover callback if it exists and the hovered article has changed
-        if (this.onArticleHover && (!this.hoveredPlanet || hoveredPlanet.id !== this.hoveredPlanet.id)) {
-          console.log('Hovering over planet:', hoveredPlanet.name);
-          this.onArticleHover(hoveredPlanet.article);
+        // Only update if it's a different planet than before
+        if (this.hoveredPlanet !== hoveredPlanet) {
           this.hoveredPlanet = hoveredPlanet;
+          console.log('Hovering over planet:', hoveredPlanet.name);
+          
+          // Call the hover callback with error handling
+          if (this.onArticleHover && typeof this.onArticleHover === 'function') {
+            try {
+              this.onArticleHover(hoveredPlanet.article);
+            } catch (callbackError) {
+              console.error('Error in article hover callback:', callbackError);
+              // Don't let callback errors break the UI
+            }
+          }
         }
+      } else if (this.hoveredPlanet) {
+        // We're not hovering over any planet now
+        this.hoveredPlanet = null;
         
-        return;
+        // Reset cursor
+        this.renderer.domElement.style.cursor = 'default';
+        
+        // Call the hover callback with null to indicate no hover
+        if (this.onArticleHover && typeof this.onArticleHover === 'function') {
+          try {
+            this.onArticleHover(null);
+          } catch (callbackError) {
+            console.error('Error in article hover callback (clearing):', callbackError);
+            // Don't let callback errors break the UI
+          }
+        }
+      } else {
+        // Not hovering over any planet
+        this.renderer.domElement.style.cursor = 'default';
       }
-    }
-    
-    // If we get here, we're not hovering over any planet
-    this.renderer.domElement.style.cursor = 'default';
-    
-    // Clear hover state if previously hovering
-    if (this.hoveredPlanet && this.onArticleHover) {
-      this.onArticleHover(null);
-      this.hoveredPlanet = null;
+    } catch (error) {
+      // Catch any errors to prevent UI from breaking
+      console.error('Error checking hover:', error);
     }
   };
   
@@ -467,58 +510,113 @@ export class OrbitalSystem {
    * Handle click event for article selection
    */
   handleClick = (event: MouseEvent): void => {
-    // Get the mouse position
-    this.pointer.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
-    this.pointer.y = -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
-    
-    // Update the raycaster
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    
-    // Get the intersecting objects - check all scene children and their descendants
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-    
-    // Check if something was clicked
-    if (intersects.length > 0) {
-      console.log('Clicked on something:', intersects[0].object);
+    try {
+      // Get the mouse position
+      this.pointer.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
+      this.pointer.y = -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
       
-      // Try to find the planet from the clicked object
-      let clickedPlanet = null;
-      const clickedObject = intersects[0].object;
+      // Update the raycaster with increased precision for better detection
+      this.raycaster.setFromCamera(this.pointer, this.camera);
+      this.raycaster.params.Line.threshold = 0.3; // More forgiving threshold for clicks
+      this.raycaster.params.Points.threshold = 0.3;
       
-      // Check all planets to see if we clicked on one of them or their labels
-      for (const planet of Planet.planets) {
-        // Skip the sun
-        if (planet.name === 'Local Group News') continue;
+      // Get the intersecting objects - check all scene children and their descendants
+      const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+      
+      // Check if something was clicked
+      if (intersects.length > 0) {
+        console.log('Clicked on something:', intersects[0].object);
         
-        // Check if we clicked on the planet mesh
-        if (clickedObject === planet.planet) {
-          clickedPlanet = planet;
-          break;
+        // Try to find the planet from the clicked object
+        let clickedPlanet = null;
+        
+        // Check all intersections, not just the first one
+        for (const intersection of intersects) {
+          const clickedObject = intersection.object;
+          
+          // Check all planets to see if we clicked on one of them or their labels
+          for (const planet of Planet.planets) {
+            // Skip the sun
+            if (planet.name === 'Local Group News') continue;
+            
+            // Check if we clicked on the planet mesh
+            if (clickedObject === planet.planet) {
+              clickedPlanet = planet;
+              break;
+            }
+            
+            // Check if we clicked on the planet's label
+            if (planet.label && clickedObject === planet.label) {
+              clickedPlanet = planet;
+              break;
+            }
+            
+            // Check if we clicked on a child of the planet mesh
+            if (clickedObject.parent && clickedObject.parent === planet.planet) {
+              clickedPlanet = planet;
+              break;
+            }
+            
+            // Additional check: check if we're close to the planet (more forgiving)
+            if (intersection.distance < 5 && clickedObject.type === 'Mesh') {
+              // Get the planet's position
+              const planetPos = new THREE.Vector3();
+              planet.planet.getWorldPosition(planetPos);
+              
+              // Get the intersection point
+              const intersectionPoint = intersection.point;
+              
+              // Calculate distance between intersection point and planet
+              const distance = planetPos.distanceTo(intersectionPoint);
+              
+              // If we're close enough to the planet, consider it clicked
+              if (distance < planet.radius * 2) { // Even more forgiving than hover
+                clickedPlanet = planet;
+                break;
+              }
+            }
+          }
+          
+          // If we found a planet, no need to check more intersections
+          if (clickedPlanet) break;
         }
         
-        // Check if we clicked on the planet's label
-        if (planet.label && clickedObject === planet.label) {
-          clickedPlanet = planet;
-          break;
-        }
-        
-        // Check if we clicked on a child of the planet mesh
-        if (clickedObject.parent && clickedObject.parent === planet.planet) {
-          clickedPlanet = planet;
-          break;
+        // If we found a planet with an article, select it
+        if (clickedPlanet && clickedPlanet.article) {
+          console.log('Selected planet:', clickedPlanet.name);
+          
+          // Pause the simulation when selecting a planet
+          this.isPaused = true;
+          
+          // Highlight the selected planet
+          this.hoveredPlanet = clickedPlanet;
+          
+          // Call the article selection callback with error handling
+          if (this.onArticleSelect && typeof this.onArticleSelect === 'function') {
+            try {
+              // Use setTimeout to prevent UI freezing if callback is heavy
+              const articleToSelect = clickedPlanet.article;
+              if (articleToSelect) {
+                setTimeout(() => {
+                  try {
+                    if (this.onArticleSelect) {
+                      this.onArticleSelect(articleToSelect);
+                    }
+                  } catch (innerError) {
+                    console.error('Error in delayed article selection callback:', innerError);
+                  }
+                }, 0);
+              }
+            } catch (callbackError) {
+              console.error('Error in article selection callback:', callbackError);
+              // Don't let callback errors break the UI
+            }
+          }
         }
       }
-      
-      // If we found a planet with an article, select it
-      if (clickedPlanet && clickedPlanet.article) {
-        console.log('Selected planet:', clickedPlanet.name);
-        console.log('Article:', clickedPlanet.article);
-        
-        // Call the article selection callback
-        if (this.onArticleSelect) {
-          this.onArticleSelect(clickedPlanet.article);
-        }
-      }
+    } catch (error) {
+      // Catch any errors to prevent UI from breaking
+      console.error('Error handling click event:', error);
     }
   };
 

@@ -1,0 +1,154 @@
+[
+  {
+    "id": "mock-article-1",
+    "title": "Technology Advances in AI Research",
+    "content": "Recent breakthroughs in artificial intelligence research have led to significant improvements in natural language processing and computer vision systems. These advancements are enabling new applications across industries from healthcare to transportation, with particular focus on making AI systems more interpretable and energy-efficient.",
+    "source": "Tech News",
+    "sourceUrl": "https://example.com/tech-news/1",
+    "author": "Jane Smith",
+    "publishedAt": "2025-04-10T12:00:00Z",
+    "location": {
+      "lat": 37.7749,
+      "lng": -122.4194,
+      "city": "San Francisco",
+      "state": "CA",
+      "country": "USA"
+    },
+    "tier": "close",
+    "mass": 100000,
+    "read": false
+  },
+  {
+    "id": "mock-article-2",
+    "title": "Climate Change Impact on Global Weather Patterns",
+    "content": "Scientists report increasing evidence that climate change is altering global weather patterns, leading to more extreme weather events worldwide. Recent studies indicate that these changes are occurring faster than previously predicted, with significant implications for agriculture, infrastructure, and human migration patterns over the next decade.",
+    "source": "Science Daily",
+    "sourceUrl": "https://example.com/science-daily/2",
+    "author": "Michael Johnson",
+    "publishedAt": "2025-04-11T14:30:00Z",
+    "location": {
+      "lat": 51.5074,
+      "lng": -0.1278,
+      "city": "London",
+      "state": "England",
+      "country": "UK"
+    },
+    "tier": "medium",
+    "mass": 150000,
+    "read": false
+  },
+  {
+    "id": "mock-article-3",
+    "title": "Economic Outlook for Second Quarter",
+    "content": "Economists predict steady growth in the second quarter despite ongoing supply chain challenges and inflationary pressures. Key sectors showing resilience include technology, healthcare, and renewable energy, while traditional manufacturing continues to face headwinds from global competition and rising material costs.",
+    "source": "Financial Times",
+    "sourceUrl": "https://example.com/financial-times/3",
+    "author": "Sarah Williams",
+    "publishedAt": "2025-04-12T09:00:00Z",
+    "location": {
+      "lat": 40.7128,
+      "lng": -74.0060,
+      "city": "New York",
+      "state": "NY",
+      "country": "USA"
+    },
+    "tier": "far",
+    "mass": 180000,
+    "read": false
+  },
+  {
+    "id": "mock-article-4",
+    "title": "New Space Telescope Discoveries",
+    "content": "The latest space telescope has captured stunning images of distant galaxies, revealing new insights into the early universe. Scientists are particularly excited about evidence of previously unknown planetary formations and stellar phenomena that could reshape our understanding of cosmic evolution. The data suggests that galaxy formation may have begun earlier than current models predict.",
+    "source": "Astronomy Today",
+    "sourceUrl": "https://example.com/astronomy/4",
+    "author": "Dr. Eliza Chen",
+    "publishedAt": "2025-04-12T09:15:00Z",
+    "location": {
+      "lat": 29.7604,
+      "lng": -95.3698,
+      "city": "Houston",
+      "state": "TX",
+      "country": "USA"
+    },
+    "tier": "far",
+    "mass": 200000,
+    "read": false
+  },
+  {
+    "id": "mock-article-5",
+    "title": "Advancements in Quantum Computing",
+    "content": "Researchers have achieved a significant breakthrough in quantum computing stability, maintaining quantum coherence for over 10 minutes. This development could accelerate practical applications in cryptography, material science, and complex system modeling. Industry experts suggest this milestone brings us significantly closer to quantum advantage for real-world problems.",
+    "source": "Quantum Review",
+    "sourceUrl": "https://example.com/quantum/5",
+    "author": "Prof. Robert Yang",
+    "publishedAt": "2025-04-13T16:45:00Z",
+    "location": {
+      "lat": 42.3736,
+      "lng": -71.1097,
+      "city": "Cambridge",
+      "state": "MA",
+      "country": "USA"
+    },
+    "tier": "close",
+    "mass": 120000,
+    "read": false
+  },
+  {
+    "id": "mock-article-6",
+    "title": "Breakthrough in Renewable Energy Storage",
+    "content": "Engineers have developed a new type of battery that can store renewable energy at unprecedented scale and efficiency. The technology uses abundant materials and promises to be both cost-effective and environmentally friendly. If successfully commercialized, this innovation could solve one of the biggest challenges in transitioning to renewable energy sources.",
+    "source": "Energy Innovation",
+    "sourceUrl": "https://example.com/energy/6",
+    "author": "Dr. Maria Rodriguez",
+    "publishedAt": "2025-04-14T10:30:00Z",
+    "location": {
+      "lat": 37.3382,
+      "lng": -121.8863,
+      "city": "San Jose",
+      "state": "CA",
+      "country": "USA"
+    },
+    "tier": "medium",
+    "mass": 160000,
+    "read": false
+  },
+  {
+    "id": "mock-article-7",
+    "title": "Global Health Initiative Launches",
+    "content": "A coalition of international organizations has launched an ambitious health initiative aimed at improving access to healthcare in underserved regions. The program will focus on preventative care, medical training, and infrastructure development. Initial funding of $2 billion has been secured from a combination of government agencies, private foundations, and corporate partners.",
+    "source": "Health Global",
+    "sourceUrl": "https://example.com/health/7",
+    "author": "James Thompson",
+    "publishedAt": "2025-04-15T08:15:00Z",
+    "location": {
+      "lat": 46.2044,
+      "lng": 6.1432,
+      "city": "Geneva",
+      "state": "",
+      "country": "Switzerland"
+    },
+    "tier": "close",
+    "mass": 140000,
+    "read": false
+  },
+  {
+    "id": "mock-article-8",
+    "title": "Advances in Sustainable Agriculture",
+    "content": "New farming techniques combining traditional knowledge with cutting-edge technology are showing promising results in increasing crop yields while reducing environmental impact. These methods focus on soil health, water conservation, and biodiversity preservation. Early adopters report up to 40% increase in productivity with significantly reduced chemical inputs.",
+    "source": "Agricultural Science",
+    "sourceUrl": "https://example.com/agriculture/8",
+    "author": "Dr. Thomas Lee",
+    "publishedAt": "2025-04-16T14:00:00Z",
+    "location": {
+      "lat": 41.8781,
+      "lng": -87.6298,
+      "city": "Chicago",
+      "state": "IL",
+      "country": "USA"
+    },
+    "tier": "medium",
+    "mass": 130000,
+    "read": false
+  }
+]

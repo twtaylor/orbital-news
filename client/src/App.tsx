@@ -220,7 +220,8 @@ function App() {
               )}
             </p>
             <div className="article-content">
-              {showFullContent || selectedArticle.content.length <= 300 
+              {!selectedArticle.content ? 'No content available' : (
+                showFullContent || selectedArticle.content.length <= 300 
                 ? selectedArticle.content 
                 : (
                   <>
@@ -233,7 +234,7 @@ function App() {
                     </button>
                   </>
                 )
-              }
+              )}
             </div>
             <div className="article-actions">
               {selectedArticle.sourceUrl && (
@@ -246,7 +247,7 @@ function App() {
                   Read Original
                 </a>
               )}
-              {showFullContent && selectedArticle.content.length > 300 && (
+              {showFullContent && selectedArticle.content && selectedArticle.content.length > 300 && (
                 <button 
                   className="collapse-button" 
                   onClick={() => setShowFullContent(false)}
