@@ -20,6 +20,7 @@ export class GeocodingService {
   private geocoder: NodeGeocoder.Geocoder;
   private tierThresholds: TierThresholds;
   private defaultUserLocation: Coordinates;
+  private defaultUserZipCode: string = '00000'; // Default ZIP code
 
   /**
    * Initialize the GeocodingService
@@ -34,11 +35,18 @@ export class GeocodingService {
   ) {
     // Default to OpenStreetMap if no provider specified (doesn't require API key)
     const geocoderOptions: NodeGeocoder.Options = {
-      provider: options.provider || 'openstreetmap',
+      provider: 'openstreetmap',
       httpAdapter: options.httpAdapter || 'https',
       apiKey: options.apiKey,
-      formatter: null
-    };
+      formatter: null,
+      fetch: (url: string, opts: any) =>
+        fetch(url, {
+          ...opts,
+          headers: {
+            'User-Agent': 'MyGeocodingApp <me@twtaylor.org>',   
+          },
+        }),
+    } as unknown as NodeGeocoder.Options;
 
     this.geocoder = NodeGeocoder(geocoderOptions);
     this.tierThresholds = tierThresholds;
@@ -152,12 +160,80 @@ export class GeocodingService {
 
   /**
    * Set the user's location
-   * @param coordinates User's coordinates
+   * @param coordinates User's coordinates or ZIP code
+   * @returns Promise that resolves when the location is set
    */
-  setUserLocation(coordinates: Coordinates): void {
-    this.defaultUserLocation = coordinates;
+  async setUserLocation(coordinates: Coordinates | string): Promise<boolean> {
+    if (typeof coordinates === 'string') {
+      // If a string is provided, assume it's a ZIP code
+      return this.setUserLocationByZipCode(coordinates);
+    } else {
+      // If coordinates are provided, set them directly
+      this.defaultUserLocation = coordinates;
+      return true;
+    }
+  }
+  
+  /**
+   * Get the user's current location
+   * @returns The user's current location coordinates
+   */
+  getUserLocation(): Coordinates {
+    return this.defaultUserLocation;
   }
 
+  /**
+   * Get the default user ZIP code
+   * @returns The default user ZIP code
+   */
+  getDefaultUserZipCode(): string {
+    return this.defaultUserZipCode;
+  }
+  
+  /**
+   * Calculate distance between two ZIP codes
+   * @param fromZipCode Starting ZIP code
+   * @param toZipCode Ending ZIP code
+   * @returns Promise with distance result
+   */
+  async calculateDistanceBetweenZipCodes(
+    fromZipCode: string,
+    toZipCode: string
+  ): Promise<DistanceResult | null> {
+    try {
+      // Geocode both ZIP codes to get coordinates
+      const fromLocation = await this.geocodeLocation(fromZipCode);
+      const toLocation = await this.geocodeLocation(toZipCode);
+      
+      if (!fromLocation || !toLocation) {
+        return null;
+      }
+      
+      const distanceInMeters = this.calculateDistance(
+        fromLocation.coordinates,
+        toLocation.coordinates
+      );
+      
+      const distanceInKilometers = distanceInMeters / 1000;
+      const distanceInMiles = distanceInKilometers * 0.621371;
+      
+      // Determine tier based on distance
+      const tier = this.determineTierFromDistance(distanceInKilometers);
+      
+      return {
+        distanceInMeters,
+        distanceInKilometers,
+        distanceInMiles,
+        tier,
+        fromLocation,
+        toLocation
+      };
+    } catch (error) {
+      console.error('Error calculating distance between ZIP codes:', error);
+      return null;
+    }
+  }
+  
   /**
    * Set the user's location by ZIP code
    * @param zipCode User's ZIP code
@@ -175,6 +251,7 @@ export class GeocodingService {
             latitude: result.latitude,
             longitude: result.longitude
           };
+          this.defaultUserZipCode = zipCode;
           return true;
         }
       }

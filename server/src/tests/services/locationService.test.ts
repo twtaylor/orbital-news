@@ -32,7 +32,6 @@ describe('LocationService', () => {
       `,
       source: 'test',
       sourceUrl: 'https://example.com/nyc-flooding',
-      tier: 'medium',
       mass: 150000,
       publishedAt: new Date().toISOString(),
       location: '', // This will be determined by our service
@@ -70,7 +69,6 @@ describe('LocationService', () => {
       content: '',
       source: 'test',
       sourceUrl: 'https://example.com/climate-agreement',
-      tier: 'far',
       mass: 80000,
       publishedAt: new Date().toISOString(),
       location: '', // This will be determined by our service
@@ -109,7 +107,6 @@ describe('LocationService', () => {
       `,
       source: 'test',
       sourceUrl: 'https://example.com/protein-discovery',
-      tier: 'close',
       mass: 220000,
       publishedAt: new Date().toISOString(),
       location: '', // This will be determined by our service

@@ -51,9 +51,7 @@ describe('Location-based Tier Tests', () => {
       author: 'test_user',
       publishedAt: new Date().toISOString(),
       location: '',
-      mass: 120000,
-      tier: 'medium', // Initial tier based on mass
-      
+      mass: 120000
     };
 
     // Step 1: Test location extraction

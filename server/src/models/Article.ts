@@ -19,27 +19,18 @@ export const calculateArticleMass = (
   return sourceCredibility * (contentLength / 10);
 };
 
-// Determine tier based on article properties
+// DEPRECATED: This function is no longer used as tier calculation is now handled
+// dynamically in the articleController based on distance and other factors.
+// Keeping this function signature for backward compatibility with any existing code.
+/**
+ * @deprecated Use dynamic tier calculation in articleController instead
+ */
 export const determineTier = (
   source: string,
   publishedAt: string,
   contentLength: number
 ): TierType => {
-  // This is a placeholder implementation
-  // In a real implementation, this would use more sophisticated logic
-  // based on the article's source, publication date, and content length
-  
-  // Determine tier based on publication date (newer = closer)
-  const pubDate = new Date(publishedAt);
-  const now = new Date();
-  const daysDifference = (now.getTime() - pubDate.getTime()) / (1000 * 3600 * 24);
-  
-  // Determine tier based on recency
-  if (daysDifference < 1) { // Less than 1 day old
-    return 'close';
-  } else if (daysDifference < 3) { // 1-3 days old
-    return 'medium';
-  } else { // More than 3 days old
-    return 'far';
-  }
+  console.warn('determineTier is deprecated. Tiers are now calculated dynamically in the articleController.');
+  // Default to medium tier
+  return 'medium';
 };

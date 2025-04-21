@@ -14,7 +14,7 @@ export interface ArticleLocation {
   city?: string;
   state?: string;
   country?: string;
-  zipCode?: string;
+  zipCode: string; // Now required
   lat?: number;
   lng?: number;
 }
@@ -33,5 +33,13 @@ export interface Article {
   location: string | ArticleLocation; // Geographic location (string or structured object)
   tags?: string[];
   mass: number; // Based on source credibility and article length
-  tier: TierType; // Orbital tier (close, medium, far)
+  // tier removed - will be calculated dynamically, not stored
+}
+
+/**
+ * Extended Article interface that includes tier for API responses
+ * This is used for API responses but not for database storage
+ */
+export interface ArticleWithTier extends Article {
+  tier: TierType; // Orbital tier (close, medium, far) - calculated dynamically
 }

@@ -1,3 +1,6 @@
+// Ensure mongoose is mocked before any imports that might use it
+jest.mock('mongoose', () => require('../mocks/mongooseMock').default);
+
 import { ArticleFetcherService } from '../../services/articleFetcherService';
 import ArticleStore from '../../services/articleStore';
 import { Article } from '../../types/models/article.type';
@@ -28,10 +31,9 @@ describe('ArticleFetcherService', () => {
       sourceUrl: 'https://reddit.com/r/news/123',
       author: 'reddituser',
       publishedAt: new Date().toISOString(),
-      location: 'San Francisco, CA',
+      location: { zipCode: '94103', city: 'San Francisco', state: 'CA' },
       tags: ['news', 'technology'],
       mass: 120000,
-      tier: 'close',
       
     }
   ];
@@ -45,10 +47,9 @@ describe('ArticleFetcherService', () => {
       sourceUrl: 'https://twitter.com/user/123',
       author: '@twitteruser',
       publishedAt: new Date().toISOString(),
-      location: 'Washington, DC',
+      location: { zipCode: '20001', city: 'Washington', state: 'DC' },
       tags: ['politics', 'news'],
       mass: 100000,
-      tier: 'close',
       
     }
   ];
@@ -62,10 +63,9 @@ describe('ArticleFetcherService', () => {
       sourceUrl: 'https://www.washingtonpost.com/news/123',
       author: 'Washington Post Author',
       publishedAt: new Date().toISOString(),
-      location: 'Washington, DC',
+      location: { zipCode: '20001', city: 'Washington', state: 'DC' },
       tags: ['politics', 'news'],
       mass: 100000,
-      tier: 'close',
       
     }
   ];

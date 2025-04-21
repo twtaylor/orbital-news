@@ -32,6 +32,8 @@ export interface DistanceResult {
   distanceInKilometers: number;
   distanceInMiles: number;
   tier: TierType;
+  fromLocation?: GeocodedLocation; // Optional source location details
+  toLocation?: GeocodedLocation;   // Optional destination location details
 }
 
 /**

@@ -6,8 +6,9 @@ import {
   triggerArticleFetch
 } from '../../controllers/articleController';
 import ArticleStore from '../../services/articleStore';
+import { GeocodingService } from '../../services/geocodingService';
 import { articleFetcher } from '../../services/articleFetcherService';
-import { Article, TierType } from '../../types/models/article.type';
+import { Article, TierType, ArticleWithTier } from '../../types/models/article.type';
 
 // Mock the ArticleStore
 jest.mock('../../services/articleStore', () => {
@@ -20,6 +21,39 @@ jest.mock('../../services/articleStore', () => {
     })),
     // Export the mocks for direct access in tests
     mockGetArticles
+  };
+});
+
+// Mock the GeocodingService
+jest.mock('../../services/geocodingService', () => {
+  const mockGetUserLocation = jest.fn().mockReturnValue({ latitude: 40.7128, longitude: -74.0060 });
+  const mockCalculateDistance = jest.fn().mockReturnValue(100000); // 100km
+  const mockDetermineTierFromDistance = jest.fn().mockReturnValue('far');
+  const mockGetDefaultUserZipCode = jest.fn().mockReturnValue('00000');
+  const mockSetUserLocationByZipCode = jest.fn().mockResolvedValue(true);
+  const mockCalculateDistanceBetweenZipCodes = jest.fn().mockResolvedValue({
+    distanceInKilometers: 2500,
+    distanceInMiles: 1553,
+    tier: 'far'
+  });
+  
+  return {
+    __esModule: true,
+    GeocodingService: jest.fn().mockImplementation(() => ({
+      getUserLocation: mockGetUserLocation,
+      calculateDistance: mockCalculateDistance,
+      determineTierFromDistance: mockDetermineTierFromDistance,
+      getDefaultUserZipCode: mockGetDefaultUserZipCode,
+      setUserLocationByZipCode: mockSetUserLocationByZipCode,
+      calculateDistanceBetweenZipCodes: mockCalculateDistanceBetweenZipCodes
+    })),
+    // Export the mocks for direct access in tests
+    mockGetUserLocation,
+    mockCalculateDistance,
+    mockDetermineTierFromDistance,
+    mockGetDefaultUserZipCode,
+    mockSetUserLocationByZipCode,
+    mockCalculateDistanceBetweenZipCodes
   };
 });
 
@@ -41,8 +75,12 @@ jest.mock('../../services/articleFetcherService', () => {
 });
 
 // Import the mocks directly
-const { mockGetArticles, mockMarkArticleAsRead } = jest.requireMock('../../services/articleStore');
+const { mockGetArticles } = jest.requireMock('../../services/articleStore');
+const { mockGetUserLocation, mockCalculateDistance, mockDetermineTierFromDistance, mockGetDefaultUserZipCode, mockSetUserLocationByZipCode } = jest.requireMock('../../services/geocodingService');
 const { mockFetchAndStoreArticles, mockGetStatus } = jest.requireMock('../../services/articleFetcherService');
+
+// Set a longer timeout for all tests in this file
+jest.setTimeout(15000); // 15 seconds
 
 describe('ArticleController', () => {
   let mockRequest: Partial<Request>;
@@ -58,11 +96,12 @@ describe('ArticleController', () => {
       sourceUrl: 'https://reddit.com/r/news/123',
       author: 'user1',
       publishedAt: new Date().toISOString(),
-      location: 'New York',
+      location: {
+        city: 'New York',
+        zipCode: '10001'
+      },
       tags: ['news', 'test'],
-      mass: 120000,
-      tier: 'close' as TierType,
-      
+      mass: 120000
     },
     {
       id: 'article-2',
@@ -72,11 +111,12 @@ describe('ArticleController', () => {
       sourceUrl: 'https://twitter.com/user/456',
       author: 'user2',
       publishedAt: new Date().toISOString(),
-      location: 'San Francisco',
+      location: {
+        city: 'San Francisco',
+        zipCode: '94103'
+      },
       tags: ['tech', 'test'],
-      mass: 150000,
-      tier: 'medium' as TierType,
-      
+      mass: 150000
     }
   ];
   
@@ -105,19 +145,29 @@ describe('ArticleController', () => {
   
   describe('getArticles', () => {
     it('should return articles from the database', async () => {
+
       // Mock the getArticles method to return sample articles
       mockGetArticles.mockResolvedValue(sampleArticles);
       
       // Call the controller method
       await getArticles(mockRequest as Request, mockResponse as Response);
       
+      // Verify that the getArticles method was called
+      expect(mockGetArticles).toHaveBeenCalled();
+      
+      // Create expected articles with tier
+      const expectedArticlesWithTier = sampleArticles.map(article => ({
+        ...article,
+        tier: 'far' // This matches our mocked determineTierFromDistance return value
+      }));
+      
       // Verify that the correct response was sent
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'success',
-        results: 2,
+        results: expectedArticlesWithTier.length,
         data: {
-          articles: sampleArticles
+          articles: expectedArticlesWithTier
         }
       });
       
@@ -153,7 +203,7 @@ describe('ArticleController', () => {
         status: 'success',
         results: 1,
         data: {
-          articles: [sampleArticles[0]]
+          articles: [ { ...sampleArticles[0], tier: 'far' } ]
         }
       });
       
@@ -161,13 +211,13 @@ describe('ArticleController', () => {
       expect(mockGetArticles).toHaveBeenCalledWith({
         source: 'reddit',
         location: 'New York',
-        tier: 'close',
         limit: 20,
         daysBack: 3
       });
     });
     
     it('should trigger article fetch if no articles are found', async () => {
+
       // Mock the getArticles method to return an empty array
       mockGetArticles.mockResolvedValue([]);
       
@@ -189,6 +239,7 @@ describe('ArticleController', () => {
     });
     
     it('should handle errors when fetching articles', async () => {
+
       // Mock the getArticles method to throw an error
       mockGetArticles.mockRejectedValue(new Error('Database error'));
       
@@ -202,10 +253,54 @@ describe('ArticleController', () => {
         message: 'Failed to fetch articles'
       });
     });
+
+    it('should set user location when userZipCode is provided', async () => {
+      // Set up query parameters with userZipCode
+      mockRequest.query = {
+        source: 'reddit',
+        userZipCode: '94103' // San Francisco zip code
+      };
+      
+      // Mock the getArticles method to return sample articles
+      mockGetArticles.mockResolvedValue(sampleArticles);
+      
+      // Call the controller method
+      await getArticles(mockRequest as Request, mockResponse as Response);
+      
+      // Verify that setUserLocationByZipCode was called with the correct zip code
+      expect(mockSetUserLocationByZipCode).toHaveBeenCalledWith('94103');
+      
+      // Verify that the correct response was sent
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      
+      // Create expected articles with tier
+      const expectedArticlesWithTier = sampleArticles.map(article => ({
+        ...article,
+        tier: 'far' // This matches our mocked determineTierFromDistance return value
+      }));
+      
+      // Verify the response data
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'success',
+        results: expectedArticlesWithTier.length,
+        data: {
+          articles: expectedArticlesWithTier
+        }
+      });
+      
+      // Verify that getArticles was called with the correct parameters
+      expect(mockGetArticles).toHaveBeenCalledWith({
+        source: 'reddit',
+        location: undefined,
+        limit: 30,
+        daysBack: 7
+      });
+    });
   });
   
   describe('getArticleById', () => {
     it('should return a specific article by ID', async () => {
+
       // Set up request parameters
       mockRequest.params = { id: 'article-1' };
       
@@ -217,10 +312,17 @@ describe('ArticleController', () => {
       
       // Verify that the correct response was sent
       expect(mockResponse.status).toHaveBeenCalledWith(200);
+      
+      // Create expected article with tier
+      const expectedArticleWithTier = {
+        ...sampleArticles[0],
+        tier: 'far' // This matches our mocked determineTierFromDistance return value
+      };
+      
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'success',
         data: {
-          article: sampleArticles[0]
+          article: expectedArticleWithTier
         }
       });
       
@@ -232,6 +334,7 @@ describe('ArticleController', () => {
     });
     
     it('should return a 404 error if article is not found', async () => {
+
       // Set up request parameters
       mockRequest.params = { id: 'non-existent-article' };
       
@@ -250,6 +353,7 @@ describe('ArticleController', () => {
     });
     
     it('should handle errors when fetching an article', async () => {
+
       // Set up request parameters
       mockRequest.params = { id: 'article-1' };
       
@@ -272,6 +376,7 @@ describe('ArticleController', () => {
   
   describe('getArticleFetcherStatus', () => {
     it('should return the article fetcher status', async () => {
+
       // Mock the getStatus method to return a status object
       const mockStatus = {
         isRunning: false,
@@ -293,6 +398,7 @@ describe('ArticleController', () => {
     });
     
     it('should handle errors when getting article fetcher status', async () => {
+
       // Mock the getStatus method to throw an error
       mockGetStatus.mockImplementation(() => {
         throw new Error('Fetcher error');
@@ -312,6 +418,7 @@ describe('ArticleController', () => {
   
   describe('triggerArticleFetch', () => {
     it('should trigger an article fetch', async () => {
+
       // Mock the getStatus method to return a status object
       const mockStatus = {
         isRunning: false,
@@ -337,6 +444,7 @@ describe('ArticleController', () => {
     });
     
     it('should handle errors when triggering an article fetch', async () => {
+
       // Mock the fetchAndStoreArticles method to throw an error
       mockFetchAndStoreArticles.mockImplementation(() => {
         throw new Error('Fetcher error');

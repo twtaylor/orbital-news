@@ -1,4 +1,4 @@
-import { determineTier } from '../models/Article';
+// No longer need to import determineTier as tier is calculated dynamically in the controller
 import { Article, TierType } from '../types/models/article.type';
 import { RedditService } from './redditService';
 
@@ -39,8 +39,7 @@ export class NewsService {
         publishedAt: new Date().toISOString(),
         location: 'Cambridge, MA',
         tags: ['science', 'technology', 'quantum'],
-        mass: 120000,
-        tier: 'close'
+        mass: 120000
       },
       {
         id: 'reddit-medium',
@@ -52,8 +51,7 @@ export class NewsService {
         publishedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
         location: 'Cape Canaveral, FL',
         tags: ['space', 'technology', 'spacex'],
-        mass: 150000,
-        tier: 'medium'
+        mass: 150000
       },
       {
         id: 'reddit-far',
@@ -65,8 +63,7 @@ export class NewsService {
         publishedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
         location: 'Chile',
         tags: ['astronomy', 'exoplanet', 'science'],
-        mass: 180000,
-        tier: 'far'
+        mass: 180000
       }
     ];
   }
@@ -93,8 +90,7 @@ export class NewsService {
         publishedAt: new Date().toISOString(),
         location: 'San Francisco, CA',
         tags: ['technology', 'business', 'acquisition'],
-        mass: 100000,
-        tier: 'close'
+        mass: 100000
       },
       {
         id: 'twitter-medium',
@@ -106,8 +102,7 @@ export class NewsService {
         publishedAt: new Date(Date.now() - 43200000).toISOString(), // 12 hours ago
         location: 'Palo Alto, CA',
         tags: ['ai', 'technology', 'research'],
-        mass: 130000,
-        tier: 'medium'
+        mass: 130000
       },
       {
         id: 'twitter-far',
@@ -119,8 +114,7 @@ export class NewsService {
         publishedAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
         location: 'Geneva, Switzerland',
         tags: ['climate', 'environment', 'science'],
-        mass: 160000,
-        tier: 'far'
+        mass: 160000
       }
     ];
   }
@@ -147,8 +141,7 @@ export class NewsService {
         publishedAt: new Date().toISOString(),
         location: 'Washington DC',
         tags: ['politics', 'policy', 'legislation'],
-        mass: 150000,
-        tier: 'close'
+        mass: 150000
       },
       {
         id: 'wapo-medium',
@@ -160,8 +153,7 @@ export class NewsService {
         publishedAt: new Date(Date.now() - 64800000).toISOString(), // 18 hours ago
         location: 'New York, NY',
         tags: ['economics', 'inflation', 'markets'],
-        mass: 140000,
-        tier: 'medium'
+        mass: 140000
       },
       {
         id: 'wapo-far',
@@ -173,8 +165,7 @@ export class NewsService {
         publishedAt: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
         location: 'Brussels, Belgium',
         tags: ['international', 'diplomacy', 'politics'],
-        mass: 170000,
-        tier: 'far'
+        mass: 170000
       }
     ];
   }

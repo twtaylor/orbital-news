@@ -21,24 +21,21 @@ const ArticleSchema = new Schema(
     author: { type: String },
     publishedAt: { type: String, required: true },
     location: { 
-      type: Schema.Types.Mixed, // Can be either String or ArticleLocation object
+      type: Schema.Types && Schema.Types.Mixed ? Schema.Types.Mixed : Object, // Can be either String or ArticleLocation object
       required: true,
       validate: {
         validator: function(v: string | ArticleLocation) {
-          // Valid if it's a string or an object with expected properties
+          // Valid if it's a string or an object with expected properties including zipCode
           return typeof v === 'string' || 
-                 (typeof v === 'object' && v !== null);
+                 (typeof v === 'object' && v !== null && 
+                  (typeof v === 'object' && 'zipCode' in v));
         },
-        message: 'Location must be a string or a valid location object'
+        message: 'Location must be a string or a valid location object with zipCode'
       }
     },
     tags: [{ type: String }],
     mass: { type: Number, required: true },
-    tier: { 
-      type: String, 
-      required: true, 
-      enum: ['close', 'medium', 'far'] 
-    },
+    // tier removed - will be calculated dynamically, not stored
     fetchedAt: { type: Date, default: Date.now }
   },
   { 
@@ -50,7 +47,6 @@ const ArticleSchema = new Schema(
 // Create indexes for common queries
 ArticleSchema.index({ source: 1, publishedAt: -1 });
 ArticleSchema.index({ location: 1 });
-ArticleSchema.index({ tier: 1 });
 ArticleSchema.index({ fetchedAt: 1 });
 
 // Create the model

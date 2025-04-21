@@ -4,6 +4,7 @@ import { Article, ArticleLocation, TierType } from '../types/models/article.type
 import { RedditTokenResponse, RedditPost, RedditPostData } from '../types/services/reddit.type';
 import { LocationService } from './locationService';
 import { ArticleStore } from './articleStore';
+import { GeocodingService } from './geocodingService';
 import MongoManager from '../database/MongoManager';
 
 // Load environment variables
@@ -20,6 +21,7 @@ export class RedditService {
   private tokenExpiry: number = 0;
   private locationService: LocationService;
   private articleStore: ArticleStore;
+  private geocodingService: GeocodingService;
 
   constructor() {
     this.clientId = process.env.REDDIT_CLIENT_ID || '';
@@ -27,6 +29,7 @@ export class RedditService {
     this.userAgent = 'OrbitalNews/1.0';
     this.locationService = new LocationService();
     this.articleStore = new ArticleStore();
+    this.geocodingService = new GeocodingService();
     
     if (!this.clientId || !this.clientSecret) {
       console.warn('Reddit API credentials not found in environment variables');
@@ -130,18 +133,19 @@ export class RedditService {
       }
     }
     
+    // TODO: clean up in future
     // Use mock data if credentials aren't available
-    if (!this.clientId || !this.clientSecret) {
-      console.info('Using mock Reddit data (no API credentials)');
-      const mockArticles = await this.getMockArticles();
+    // if (!this.clientId || !this.clientSecret) {
+    //   console.info('Using mock Reddit data (no API credentials)');
+    //   const mockArticles = await this.getMockArticles();
       
-      // Store mock articles if MongoDB is connected
-      if (MongoManager.isConnected()) {
-        await this.articleStore.storeArticles(mockArticles);
-      }
+    //   // Store mock articles if MongoDB is connected
+    //   if (MongoManager.isConnected()) {
+    //     await this.articleStore.storeArticles(mockArticles);
+    //   }
       
-      return mockArticles;
-    }
+    //   return mockArticles;
+    // }
 
     try {
       console.info(`Fetching articles from Reddit API...`);
@@ -220,13 +224,14 @@ export class RedditService {
     const mass = (post.score + (post.num_comments * 2)) * 1000;
     const cappedMass = Math.max(10000, Math.min(500000, mass)); // Limit mass between 10k and 500k
     
-    // Determine initial tier based on mass (will be overridden by location-based tier if available)
-    const massTier = this.determineTierFromMass(cappedMass);
-    
     // Default location from post flair
-    let location = post.link_flair_text || "";
-    
-    // Create the base article with mass-based tier as fallback
+    let location = post.link_flair_text || '';
+
+    // Create a default zipCode for string-based locations
+    // We'll use a default zipCode for the article when we don't have a specific one
+    const defaultZipCode = '00000';
+
+    // Create the base article
     const article: Article = {
       id: `reddit-${post.id}`,
       title: post.title,
@@ -236,31 +241,34 @@ export class RedditService {
       sourceUrl: post.url,
       author: post.author,
       publishedAt: new Date(post.created_utc * 1000).toISOString(),
-      location, // Will be updated with structured location data if available
-      mass: cappedMass,
-      tier: massTier, // Will be updated if location-based tier is available
+      // Initialize with a structured location that includes the required zipCode
+      location: {
+        zipCode: defaultZipCode,
+        city: location || 'Unknown'
+      },
+      mass: cappedMass
     };
-    
-    // Try to extract location information and determine location-based tier
+
+    // Try to extract location information
     try {
       // Extract location from title and content
       // Use a more conservative approach - don't try to fetch full content by default
       // to avoid issues with paywalled sites
       const locationResult = await this.locationService.extractLocations(article, {
-        fetchFullContent: false,  // Don't fetch full content by default to avoid paywall issues
-        minConfidence: 0.4        // Require reasonable confidence
+        fetchFullContent: false, // Don't fetch full content by default to avoid paywall issues
+        minConfidence: 0.4 // Require reasonable confidence
       });
-      
+
       // Set the location if we found one with reasonable confidence
       if (locationResult.primaryLocation && locationResult.primaryLocation.confidence >= 0.4) {
         // Check if we have detailed location data (from geocoding)
         if (locationResult.primaryLocation.latitude && locationResult.primaryLocation.longitude) {
-          // Create structured location object
+          // Create structured location object with required zipCode
           const structuredLocation: ArticleLocation = {
             city: locationResult.primaryLocation.city,
             state: locationResult.primaryLocation.region,
             country: locationResult.primaryLocation.country,
-            zipCode: locationResult.primaryLocation.zipCode,
+            zipCode: locationResult.primaryLocation.zipCode || defaultZipCode, // Ensure zipCode is always set
             lat: locationResult.primaryLocation.latitude,
             lng: locationResult.primaryLocation.longitude
           };
@@ -268,16 +276,32 @@ export class RedditService {
           // Set the structured location
           article.location = structuredLocation;
         } else {
-          // Fall back to simple location name if no geocoded data
-          article.location = locationResult.primaryLocation.name;
+          // For simple string locations, we need to create a structured object with zipCode
+          // Try to geocode the location name to get a zipCode
+          try {
+            const geocodedLocation = await this.geocodingService.geocodeLocation(locationResult.primaryLocation.name);
+            if (geocodedLocation && geocodedLocation.zipCode) {
+              article.location = {
+                city: locationResult.primaryLocation.name,
+                zipCode: geocodedLocation.zipCode,
+                state: geocodedLocation.state,
+                country: geocodedLocation.country
+              };
+            } else {
+              // If geocoding fails, use the default zipCode
+              article.location = {
+                city: locationResult.primaryLocation.name,
+                zipCode: defaultZipCode
+              };
+            }
+          } catch (error) {
+            // If geocoding fails, use the default zipCode
+            article.location = {
+              city: locationResult.primaryLocation.name,
+              zipCode: defaultZipCode
+            };
+          }
         }
-      } else if (!location) { // Only set to Global if we don't already have a location from flair
-        article.location = "Global"; // Default if no location found
-      }
-      
-      // IMPORTANT: Override the mass-based tier with the location-based tier if available
-      if (locationResult.tier && (locationResult.tier === 'close' || locationResult.tier === 'medium' || locationResult.tier === 'far')) {
-        article.tier = locationResult.tier as TierType;
       }
       
       // If we didn't get a good location from the title/content and the article is from a news source,
@@ -296,22 +320,49 @@ export class RedditService {
             (!locationResult.primaryLocation || 
              fullContentResult.primaryLocation.confidence > locationResult.primaryLocation.confidence)) {
           
-          article.location = fullContentResult.primaryLocation.name;
-          
-          // Update tier if available
-          if (fullContentResult.tier && 
-              (fullContentResult.tier === 'close' || 
-               fullContentResult.tier === 'medium' || 
-               fullContentResult.tier === 'far')) {
-            article.tier = fullContentResult.tier as TierType;
+          // For full content results, ensure we have a structured location with zipCode
+          try {
+            const geocodedLocation = await this.geocodingService.geocodeLocation(fullContentResult.primaryLocation.name);
+            if (geocodedLocation && geocodedLocation.zipCode) {
+              article.location = {
+                city: fullContentResult.primaryLocation.name,
+                zipCode: geocodedLocation.zipCode,
+                country: geocodedLocation.country,
+                state: geocodedLocation.state
+              };
+            } else {
+              // If geocoding fails, use the default zipCode
+              article.location = {
+                city: fullContentResult.primaryLocation.name,
+                zipCode: defaultZipCode
+              };
+            }
+          } catch (error) {
+            // If geocoding fails, use the default zipCode
+            article.location = {
+              city: fullContentResult.primaryLocation.name,
+              zipCode: defaultZipCode
+            };
           }
         }
       }
     } catch (error) {
       console.warn(`Failed to extract location for article ${article.id}: ${error}`);
-      if (!location) { // Only set to Global if we don't already have a location from flair
-        article.location = "Global"; // Default on error
+      // Ensure location is always a structured object with zipCode
+      if (typeof article.location === 'string') {
+        article.location = {
+          city: article.location,
+          zipCode: defaultZipCode
+        };
       }
+    }
+    
+    // Final check to ensure location is always a structured object with zipCode
+    if (typeof article.location === 'string') {
+      article.location = {
+        city: article.location,
+        zipCode: defaultZipCode
+      };
     }
     
     return article;
@@ -331,10 +382,14 @@ export class RedditService {
         sourceUrl: 'https://reddit.com/r/science/mock1',
         author: 'science_enthusiast',
         publishedAt: new Date().toISOString(),
-        location: '',  // Will be extracted as 'Cambridge, Massachusetts' (far from Oklahoma City)
-        mass: 120000,
-        tier: 'far' as TierType, // Initial tier, will be updated based on location distance
-        
+        location: {
+          city: 'Cambridge',
+          state: 'Massachusetts',
+          zipCode: '02139',
+          lat: 42.3736,
+          lng: -71.1097
+        },
+        mass: 120000
       },
       {
         id: 'reddit-mock2',
@@ -344,56 +399,87 @@ export class RedditService {
         sourceUrl: 'https://reddit.com/r/technology/mock2',
         author: 'tech_news',
         publishedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-        location: '',  // Will be extracted as 'San Francisco, California' (far from Oklahoma City)
-        mass: 180000,
-        tier: 'far' as TierType, // Initial tier, will be updated based on location distance
-        
+        location: {
+          city: 'San Francisco',
+          state: 'California',
+          zipCode: '94103',
+          lat: 37.7749,
+          lng: -122.4194
+        },
+        mass: 180000
       },
       {
         id: 'reddit-mock3',
-        title: 'Dallas City Council Approves New Urban Development Plan',
-        content: 'The Dallas City Council has approved a comprehensive urban development plan that will transform the downtown area with new parks and infrastructure...',
+        title: 'Global Economic Summit Addresses Climate Change',
+        content: 'World leaders gathered in Geneva to discuss economic policies addressing climate change...',
         source: 'reddit',
-        sourceUrl: 'https://reddit.com/r/localnews/mock3',
-        author: 'texas_reporter',
+        sourceUrl: 'https://reddit.com/r/worldnews/mock3',
+        author: 'global_reporter',
         publishedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-        location: '',  // Will be extracted as 'Dallas, Texas' (close to Oklahoma City)
-        mass: 90000,
-        tier: 'close' as TierType, // Initial tier, will be updated based on location distance
-        
+        location: {
+          city: 'Geneva',
+          country: 'Switzerland',
+          zipCode: '1201',
+          lat: 46.2044,
+          lng: 6.1432
+        },
+        mass: 200000
       }
     ];
     
-    // Extract locations for mock articles
-    const articlesWithLocations = await Promise.all(
-      mockArticles.map(async (article) => {
-        try {
-          const locationResult = await this.locationService.extractLocations(article, {
-            fetchFullContent: false
-          });
+    // Ensure all mock articles have proper location data with zipCode
+    for (const article of mockArticles) {
+      try {
+        // Ensure each article has a structured location with zipCode
+        if (typeof article.location === 'string') {
+          // Try to geocode the location name to get a zipCode
+          const geocodedLocation = await this.geocodingService.geocodeLocation(article.location);
           
-          if (locationResult.primaryLocation) {
-            article.location = locationResult.primaryLocation.name;
+          if (geocodedLocation && geocodedLocation.zipCode) {
+            article.location = {
+              city: article.location.split(',')[0]?.trim() || 'Unknown',
+              state: geocodedLocation.state,
+              country: geocodedLocation.country,
+              zipCode: geocodedLocation.zipCode,
+              lat: geocodedLocation.coordinates.latitude,
+              lng: geocodedLocation.coordinates.longitude
+            };
           } else {
-            article.location = "Global"; // Default if no location found
+            // If geocoding fails, use a default zipCode
+            article.location = {
+              city: article.location.split(',')[0]?.trim() || 'Unknown',
+              zipCode: '00000'
+            };
           }
-        } catch (error) {
-          console.warn(`Failed to extract location for mock article ${article.id}`);
-          article.location = "Global"; // Default on error
+        } else if (!article.location || typeof article.location !== 'object') {
+          // Default location if none exists
+          article.location = {
+            city: 'Global',
+            zipCode: '00000'
+          };
         }
-        return article;
-      })
-    );
+      } catch (error) {
+        console.warn(`Error processing mock article ${article.id}: ${error}`);
+        // Ensure a valid location object with zipCode
+        if (typeof article.location === 'string' || !article.location) {
+          article.location = {
+            city: typeof article.location === 'string' ? article.location : 'Global',
+            zipCode: '00000'
+          };
+        }
+      }
+    }
     
-    return articlesWithLocations;
+    return mockArticles;
   }
   
   /**
    * Determine tier based on article mass
+   * This is used for dynamic tier calculation, not for storage
    * @param mass Article mass
    * @returns Tier type (close, medium, far)
    */
-  private determineTierFromMass(mass: number): TierType {
+  determineTierFromMass(mass: number): TierType {
     if (mass > 200000) {
       return 'close';
     } else if (mass > 100000) {

@@ -2,6 +2,10 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  // Force exit after tests complete to avoid hanging due to open handles
+  forceExit: true,
+  // Detect open handles to help diagnose issues
+  detectOpenHandles: true,
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {

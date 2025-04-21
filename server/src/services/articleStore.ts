@@ -37,7 +37,6 @@ export class ArticleStore {
           existingArticle.content = article.content;
           existingArticle.location = article.location;
           existingArticle.mass = article.mass;
-          existingArticle.tier = article.tier;
           existingArticle.fetchedAt = new Date();
           
           await existingArticle.save();
@@ -55,7 +54,6 @@ export class ArticleStore {
             location: article.location,
             tags: article.tags,
             mass: article.mass,
-            tier: article.tier,
             fetchedAt: new Date()
           });
           
@@ -80,7 +78,6 @@ export class ArticleStore {
   async getArticles(options: {
     source?: string;
     location?: string;
-    tier?: string;
     limit?: number;
     daysBack?: number;
     articleId?: string; // Added articleId parameter
@@ -91,7 +88,7 @@ export class ArticleStore {
     }
 
     try {
-      const { source, location, tier, limit = 100, daysBack = 7 } = options;
+      const { source, location, limit = 100, daysBack = 7 } = options;
       
       // Build query
       const query: any = {};
@@ -110,7 +107,7 @@ export class ArticleStore {
         ];
       }
       
-      if (tier) query.tier = tier;
+      // Tier is no longer stored in the database, so we don't query by it
       if (options.articleId) query.articleId = options.articleId; // Added articleId to query
       
       // Filter by date range if specified
@@ -144,8 +141,8 @@ export class ArticleStore {
           publishedAt: docAny.publishedAt,
           location: docAny.location, // This could be string or ArticleLocation object
           tags: docAny.tags,
-          mass: docAny.mass,
-          tier: docAny.tier as TierType
+          mass: docAny.mass
+          // tier removed - will be calculated dynamically, not stored
         };
       });
       

@@ -70,10 +70,9 @@ describe('ArticleStore', () => {
     sourceUrl: 'https://example.com/test',
     author: 'Test Author',
     publishedAt: new Date().toISOString(),
-    location: 'Test Location',
+    location: { zipCode: '00000', city: 'Test Location' },
     tags: ['test', 'article'],
-    mass: 50000,
-    tier: 'medium'
+    mass: 50000
   };
   
   // Mock article with structured location
@@ -94,8 +93,7 @@ describe('ArticleStore', () => {
       lng: -122.4194
     },
     tags: ['test', 'article', 'location'],
-    mass: 60000,
-    tier: 'close'
+    mass: 60000
   };
   
   // Sample article from database (with MongoDB fields)

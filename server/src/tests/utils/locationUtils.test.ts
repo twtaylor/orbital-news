@@ -30,13 +30,16 @@ describe('Location Utils', () => {
     it('should handle partial structured data', () => {
       const partialLocation: ArticleLocation = {
         city: 'London',
-        country: 'United Kingdom'
+        country: 'United Kingdom',
+        zipCode: 'SW1A 1AA' // Adding required zipCode
       };
       expect(getLocationName(partialLocation)).toBe('London, United Kingdom');
     });
     
     it('should handle empty structured data', () => {
-      const emptyLocation: ArticleLocation = {};
+      const emptyLocation: ArticleLocation = {
+        zipCode: '00000' // Adding required zipCode
+      };
       expect(getLocationName(emptyLocation)).toBe('Unknown');
     });
   });
@@ -50,12 +53,13 @@ describe('Location Utils', () => {
       expect(getZipCode(structuredLocation)).toBe('94103');
     });
     
-    it('should return undefined if zip code is not in structured data', () => {
-      const noZipLocation: ArticleLocation = {
+    it('should return the zip code from structured data even when it was previously optional', () => {
+      const zipLocation: ArticleLocation = {
         city: 'Paris',
-        country: 'France'
+        country: 'France',
+        zipCode: '75001' // Now required
       };
-      expect(getZipCode(noZipLocation)).toBeUndefined();
+      expect(getZipCode(zipLocation)).toBe('75001');
     });
   });
   
@@ -73,8 +77,9 @@ describe('Location Utils', () => {
     
     it('should return undefined if coordinates are not in structured data', () => {
       const noCoordinatesLocation: ArticleLocation = {
-        city: 'Berlin',
-        country: 'Germany'
+        city: 'Tokyo',
+        country: 'Japan',
+        zipCode: '100-0001' // Adding required zipCode
       };
       expect(getCoordinates(noCoordinatesLocation)).toBeUndefined();
     });
@@ -90,7 +95,9 @@ describe('Location Utils', () => {
     });
     
     it('should return true for empty structured locations', () => {
-      const emptyLocation: ArticleLocation = {};
+      const emptyLocation: ArticleLocation = {
+        zipCode: '00000' // Adding required zipCode
+      };
       expect(hasStructuredData(emptyLocation)).toBe(true);
     });
   });

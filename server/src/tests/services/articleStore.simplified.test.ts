@@ -46,9 +46,7 @@ describe('ArticleStore Simplified Tests', () => {
     publishedAt: new Date().toISOString(),
     location: 'New York',
     tags: ['test', 'sample'],
-    mass: 150000,
-    tier: 'medium' as TierType,
-    
+    mass: 150000
   };
   
   beforeEach(() => {
