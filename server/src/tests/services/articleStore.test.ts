@@ -136,22 +136,45 @@ describe('ArticleStore', () => {
       
       // Verify results
       expect(result).toBe(1); // 1 article stored
-      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: mockArticle.id });
+      expect(ArticleModel.findOne).toHaveBeenCalledWith({ $or: [{ articleId: mockArticle.id }, { sourceUrl: mockArticle.sourceUrl }] });
       // Verify that a new ArticleModel was created
       expect(ArticleModel).toHaveBeenCalled();
     });
     
-    it('should update existing articles', async () => {
-      // Mock ArticleModel.findOne to return an existing article
-      (ArticleModel.findOne as jest.Mock).mockResolvedValue(sampleDbArticle);
+    it('should update existing articles if they are older than 24 hours', async () => {
+      // Set the fetchedAt date to be older than 24 hours
+      const oldDate = new Date();
+      oldDate.setHours(oldDate.getHours() - 25); // 25 hours ago
+      
+      // Mock ArticleModel.findOne to return an existing article with an old fetchedAt date
+      const oldArticle = { ...sampleDbArticle, fetchedAt: oldDate };
+      (ArticleModel.findOne as jest.Mock).mockResolvedValue(oldArticle);
       
       // Call the method
       const result = await articleStore.storeArticles([mockArticle]);
       
       // Verify results
       expect(result).toBe(1); // 1 article updated
-      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: mockArticle.id });
-      expect(sampleDbArticle.save).toHaveBeenCalled();
+      expect(ArticleModel.findOne).toHaveBeenCalledWith({ $or: [{ articleId: mockArticle.id }, { sourceUrl: mockArticle.sourceUrl }] });
+      expect(oldArticle.save).toHaveBeenCalled();
+    });
+    
+    it('should skip updating articles that were fetched within the last 24 hours', async () => {
+      // Set the fetchedAt date to be within the last 24 hours
+      const recentDate = new Date();
+      recentDate.setHours(recentDate.getHours() - 12); // 12 hours ago
+      
+      // Mock ArticleModel.findOne to return an existing article with a recent fetchedAt date
+      const recentArticle = { ...sampleDbArticle, fetchedAt: recentDate };
+      (ArticleModel.findOne as jest.Mock).mockResolvedValue(recentArticle);
+      
+      // Call the method
+      const result = await articleStore.storeArticles([mockArticle]);
+      
+      // Verify results
+      expect(result).toBe(0); // 0 articles updated (skipped due to recent fetch)
+      expect(ArticleModel.findOne).toHaveBeenCalledWith({ $or: [{ articleId: mockArticle.id }, { sourceUrl: mockArticle.sourceUrl }] });
+      expect(recentArticle.save).not.toHaveBeenCalled();
     });
     
     it('should return 0 when MongoDB is not connected', async () => {
@@ -175,7 +198,7 @@ describe('ArticleStore', () => {
       
       // Verify results
       expect(result).toBe(0); // No articles stored due to error
-      expect(ArticleModel.findOne).toHaveBeenCalledWith({ articleId: mockArticle.id });
+      expect(ArticleModel.findOne).toHaveBeenCalledWith({ $or: [{ articleId: mockArticle.id }, { sourceUrl: mockArticle.sourceUrl }] });
     });
   });
   
@@ -294,55 +317,55 @@ describe('ArticleStore', () => {
     });
   });
   
-  describe('hasTodaysArticles', () => {
-    it('should return true when articles exist for today', async () => {
+  describe('getTodaysArticleCount', () => {
+    it('should return article count when articles exist for today', async () => {
       // Mock ArticleModel.countDocuments to return a count > 0
       (ArticleModel.countDocuments as jest.Mock).mockResolvedValue(5);
       
       // Call the method
-      const result = await articleStore.hasTodaysArticles('reddit');
+      const result = await articleStore.getTodaysArticleCount('reddit');
       
       // Verify results
-      expect(result).toBe(true);
+      expect(result).toBe(5);
       expect(ArticleModel.countDocuments).toHaveBeenCalledWith(expect.objectContaining({
         fetchedAt: expect.any(Object),
         source: 'reddit'
       }));
     });
     
-    it('should return false when no articles exist for today', async () => {
+    it('should return 0 when no articles exist for today', async () => {
       // Mock ArticleModel.countDocuments to return 0
       (ArticleModel.countDocuments as jest.Mock).mockResolvedValue(0);
       
       // Call the method
-      const result = await articleStore.hasTodaysArticles('reddit');
+      const result = await articleStore.getTodaysArticleCount('reddit');
       
       // Verify results
-      expect(result).toBe(false);
+      expect(result).toBe(0);
       expect(ArticleModel.countDocuments).toHaveBeenCalled();
     });
     
-    it('should return false when MongoDB is not connected', async () => {
+    it('should return 0 when MongoDB is not connected', async () => {
       // Mock MongoManager.isConnected to return false
       (MongoManager.isConnected as jest.Mock).mockReturnValue(false);
       
       // Call the method
-      const result = await articleStore.hasTodaysArticles('reddit');
+      const result = await articleStore.getTodaysArticleCount('reddit');
       
       // Verify results
-      expect(result).toBe(false);
+      expect(result).toBe(0);
       expect(ArticleModel.countDocuments).not.toHaveBeenCalled();
     });
     
-    it('should handle errors when checking for today\'s articles', async () => {
+    it('should handle errors when counting today\'s articles', async () => {
       // Mock ArticleModel.countDocuments to throw an error
       (ArticleModel.countDocuments as jest.Mock).mockRejectedValue(new Error('Database error'));
       
       // Call the method
-      const result = await articleStore.hasTodaysArticles('reddit');
+      const result = await articleStore.getTodaysArticleCount('reddit');
       
       // Verify results
-      expect(result).toBe(false);
+      expect(result).toBe(0);
       expect(ArticleModel.countDocuments).toHaveBeenCalled();
     });
   });

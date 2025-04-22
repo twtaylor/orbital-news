@@ -16,11 +16,12 @@ export class NewsService {
    * Fetch articles from Reddit
    * @param subreddit Optional subreddit to fetch from (default: 'news')
    * @param limit Optional number of articles to fetch (default: 50)
+   * @param forceFetch Optional parameter to force fetching from API even if stored articles exist (default: false)
    * @returns Promise with array of articles
    */
-  async fetchFromReddit(subreddit: string = 'news', limit: number = 50): Promise<Article[]> {
-    console.log(`Fetching from Reddit subreddit: ${subreddit}, limit: ${limit}`);
-    return this._redditService.fetchArticles(subreddit, limit);
+  async fetchFromReddit(subreddit: string = 'news', limit: number = 50, forceFetch: boolean = false): Promise<Article[]> {
+    console.log(`Fetching from Reddit subreddit: ${subreddit}, limit: ${limit}, forceFetch: ${forceFetch}`);
+    return this._redditService.fetchArticles(subreddit, limit, 'day', true, forceFetch);
   }
   
   /**
@@ -168,29 +169,5 @@ export class NewsService {
         mass: 170000
       }
     ];
-  }
-
-  /**
-   * Fetch articles from all configured sources
-   * @param _userZipCode The user's zip code for location relevance
-   * @param query Optional search query
-   * @returns Promise with array of articles from all sources
-   */
-  async fetchAllArticles(_userZipCode: string, query?: string): Promise<Article[]> {
-    try {
-      // Fetch from all sources in parallel
-      const [redditArticles, _twitterArticles, _wapoArticles] = await Promise.all([
-        this.fetchFromReddit(query),
-        this.fetchFromTwitter(query),
-        this.fetchFromWashingtonPost(query)
-      ]);
-      
-      // Combine all articles
-      // return [...redditArticles, ...twitterArticles, ...wapoArticles];
-      return [...redditArticles];
-    } catch (error) {
-      console.error('Error fetching articles:', error);
-      throw new Error('Failed to fetch articles from sources');
-    }
   }
 }

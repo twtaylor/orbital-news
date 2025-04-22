@@ -25,14 +25,29 @@ export class ArticleStore {
 
     try {
       let savedCount = 0;
+      let duplicateCount = 0;
       
       // Process each article
       for (const article of articles) {
-        // Check if article already exists
-        const existingArticle = await articleModel.findOne({ articleId: article.id });
+        // Check if article already exists by ID or URL
+        const existingArticle = await articleModel.findOne({ 
+          $or: [
+            { articleId: article.id },
+            { sourceUrl: article.sourceUrl }
+          ]
+        });
         
         if (existingArticle) {
-          // Update existing article with new data
+          // Skip update if the article was fetched recently (within the last 24 hours)
+          const lastFetchTime = new Date(existingArticle.fetchedAt);
+          const hoursSinceLastFetch = (Date.now() - lastFetchTime.getTime()) / (1000 * 60 * 60);
+          
+          if (hoursSinceLastFetch < 24) {
+            duplicateCount++;
+            continue;
+          }
+          
+          // Update existing article with new data if it's older than 24 hours
           existingArticle.title = article.title;
           existingArticle.content = article.content;
           existingArticle.location = article.location;
@@ -62,7 +77,7 @@ export class ArticleStore {
         }
       }
       
-      console.log(`Stored ${savedCount} articles successfully`);
+      console.log(`Stored ${savedCount} articles successfully (skipped ${duplicateCount} recent duplicates)`);
       return savedCount;
     } catch (error) {
       console.error('Error storing articles:', error);
@@ -155,13 +170,13 @@ export class ArticleStore {
   }
 
   /**
-   * Check if we have articles for today from a specific source
+   * Get the count of articles fetched today from a specific source
    * @param source Source to check for
-   * @returns True if we have articles for today
+   * @returns Number of articles fetched today
    */
-  async hasTodaysArticles(source: string): Promise<boolean> {
+  async getTodaysArticleCount(source: string): Promise<number> {
     if (!mongoManager.isConnected()) {
-      return false;
+      return 0;
     }
 
     try {
@@ -175,12 +190,12 @@ export class ArticleStore {
         source
       };
       
-      // Check if we have any articles fetched today
+      // Get count of articles fetched today
       const count = await articleModel.countDocuments(query);
-      return count > 0;
+      return count;
     } catch (error) {
-      console.error('Error checking today\'s articles:', error);
-      return false;
+      console.error('Error counting today\'s articles:', error);
+      return 0;
     }
   }
 

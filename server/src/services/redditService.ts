@@ -35,28 +35,34 @@ export class RedditService {
       console.warn('Reddit API credentials not found in environment variables');
     }
     
-    // Initialize and check for today's articles
-    this.checkForTodaysArticles();
+    // Initialize and check for today's articles, but only if not in a test environment
+    const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
+    if (!isTestEnvironment) {
+      this.checkForTodaysArticles();
+    }
   }
   
   /**
-   * Check if we have today's articles and fetch them if needed
+   * Check for articles and fetch them regardless of whether we have today's articles
+   * This allows the service to fetch new articles every hour
    */
   private async checkForTodaysArticles(): Promise<void> {
     try {
-      // Check if we need to load initial data
-      const hasToday = await this.articleStore.hasTodaysArticles('reddit');
+      // Get count of today's articles for logging purposes
+      const todayCount = await this.articleStore.getTodaysArticleCount('reddit');
       
-      if (!hasToday) {
-        // This will trigger a fetch and store in the background
-        this.fetchArticles().catch(err => {
-          console.error('Error fetching initial Reddit articles:', err);
-        });
-      } else {
-        console.debug('Found Reddit articles for today');
+      if (todayCount > 0) {
+        console.debug(`Found ${todayCount} Reddit articles for today, will still check for new ones`);
       }
+      
+      // Always fetch articles to get the latest ones with forceFetch=true
+      // This ensures we bypass the stored articles check and get fresh data
+      // The articleStore will handle duplicates
+      this.fetchArticles('news', 30, 'day', true, true).catch(err => {
+        console.error('Error fetching Reddit articles:', err);
+      });
     } catch (error: unknown) {
-      console.error('Error checking for today\'s articles:', error);
+      console.error('Error checking for articles:', error);
     }
   }
 
@@ -113,11 +119,14 @@ export class RedditService {
    * @param subreddit Subreddit to fetch from (default: 'news')
    * @param limit Number of articles to fetch (default: 10)
    * @param timeframe Time frame for posts (default: 'day')
+   * @param useStore Whether to try to get stored articles first (default: true)
+   * @param forceFetch Whether to force fetching from API even if stored articles exist (default: false)
    * @returns Promise with array of articles
    */
-  async fetchArticles(subreddit: string | string[] = 'news', limit: number = 10, timeframe: string = 'day', useStore: boolean = true): Promise<Article[]> {
+  async fetchArticles(subreddit: string | string[] = 'news', limit: number = 10, timeframe: string = 'day', useStore: boolean = true, forceFetch: boolean = false): Promise<Article[]> {
     // Try to get stored articles first if requested and MongoDB is connected
-    if (useStore && MongoManager.isConnected()) {
+    // Skip this check if forceFetch is true
+    if (useStore && !forceFetch && MongoManager.isConnected()) {
       try {
         const storedArticles = await this.articleStore.getArticles({
           source: 'reddit',
@@ -176,8 +185,12 @@ export class RedditService {
       
       // Flatten the results into a single array of articles
       allArticles = results.flat();
-     
-      console.info(`Fetched ${allArticles.length} articles from Reddit API`);
+      
+      // Only log if not in a test environment
+      const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
+      if (!isTestEnvironment) {
+        console.info(`Fetched ${allArticles.length} articles from Reddit API`);
+      }
       
       // Store the fetched articles if MongoDB is connected
       if (MongoManager.isConnected()) {
@@ -243,13 +256,18 @@ export class RedditService {
         includeGeoData: true // Ensure geocoding is performed
       });
 
-      console.debug(`Article ${article.id}: Extracted primary location: ${locationResult.primaryLocation?.name || 'None'}`);
+      const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
+      if (!isTestEnvironment) {
+        console.debug(`Article ${article.id}: Extracted primary location: ${locationResult.primaryLocation?.name || 'None'}`);
+      }
       
       // Set the location if we found one with reasonable confidence
       if (locationResult.primaryLocation && locationResult.primaryLocation.confidence >= 0.4) {
         // Check if we have detailed location data (from geocoding)
         if (locationResult.primaryLocation.latitude && locationResult.primaryLocation.longitude) {
-          console.debug(`Article ${article.id}: Using geocoded data from LocationService: ${locationResult.primaryLocation.name} (${locationResult.primaryLocation.latitude}, ${locationResult.primaryLocation.longitude}, ${locationResult.primaryLocation.zipCode})`);
+          if (!isTestEnvironment) {
+            console.debug(`Article ${article.id}: Using geocoded data from LocationService: ${locationResult.primaryLocation.name} (${locationResult.primaryLocation.latitude}, ${locationResult.primaryLocation.longitude}, ${locationResult.primaryLocation.zipCode})`);
+          }
           
           // Create structured location object with required zipCode
           const structuredLocation: ArticleLocation = {
@@ -265,11 +283,15 @@ export class RedditService {
           // For simple string locations, we need to create a structured object with zipCode
           // Try to geocode the location name to get a zipCode
           try {
-            console.debug(`Article ${article.id}: Attempting to geocode location: ${locationResult.primaryLocation.name}`);
+            if (!isTestEnvironment) {
+              console.debug(`Article ${article.id}: Attempting to geocode location: ${locationResult.primaryLocation.name}`);
+            }
             const geocodedLocation = await this.geocodingService.geocodeLocation(locationResult.primaryLocation.name);
             
             if (geocodedLocation && geocodedLocation.zipCode) {
+              if (!isTestEnvironment) {
               console.debug(`Article ${article.id}: Successfully geocoded to: ${geocodedLocation.zipCode} (${geocodedLocation.coordinates.latitude}, ${geocodedLocation.coordinates.longitude})`);
+            }
               
               article.location = {
                 location: locationResult.primaryLocation.name || 'Unknown',
@@ -306,11 +328,15 @@ export class RedditService {
         
         if (currentLocation && currentLocation !== 'Unknown') {
           try {
-            console.debug(`Article ${article.id}: No primary location found, trying to geocode original location: ${currentLocation}`);
+            if (!isTestEnvironment) {
+              console.debug(`Article ${article.id}: No primary location found, trying to geocode original location: ${currentLocation}`);
+            }
             const fallbackGeocode = await this.geocodingService.geocodeLocation(currentLocation);
             
             if (fallbackGeocode && fallbackGeocode.coordinates.latitude && fallbackGeocode.coordinates.longitude) {
-              console.debug(`Article ${article.id}: Successfully geocoded original location to: ${fallbackGeocode.zipCode || defaultZipCode} (${fallbackGeocode.coordinates.latitude}, ${fallbackGeocode.coordinates.longitude})`);
+              if (!isTestEnvironment) {
+                console.debug(`Article ${article.id}: Successfully geocoded original location to: ${fallbackGeocode.zipCode || defaultZipCode} (${fallbackGeocode.coordinates.latitude}, ${fallbackGeocode.coordinates.longitude})`);
+              }
               
               article.location = {
                 location: currentLocation,

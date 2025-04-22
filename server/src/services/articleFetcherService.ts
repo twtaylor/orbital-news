@@ -75,7 +75,7 @@ export class ArticleFetcherService {
       console.info(`Starting article fetch #${this.fetchCount}`);
       
       // Fetch articles from Reddit (real data source)
-      const redditArticles = await this.fetchFromSource('reddit');
+      const redditArticles = await this.fetchFromSource('reddit', true);
       console.info(`Fetched ${redditArticles.length} articles from Reddit`);
       
       // Process and geocode the articles
@@ -111,29 +111,20 @@ export class ArticleFetcherService {
   /**
    * Fetch articles from a specific source
    * @param source Source to fetch articles from
-   * @param checkForExisting Whether to check if we already have today's articles from this source
+   * @param storeArticles Whether to store the articles in the database
    * @returns Array of articles
    */
-  private async fetchFromSource(source: string, checkForExisting: boolean = true): Promise<Article[]> {
+  private async fetchFromSource(source: string, storeArticles: boolean = true): Promise<Article[]> {
     try {
       console.log(`Fetching articles from ${source}`);
-      
-      // Check if we already have today's articles from this source (if requested)
-      if (checkForExisting) {
-        const hasTodaysArticles = await this.articleStore.hasTodaysArticles(source);
-        
-        if (hasTodaysArticles) {
-          console.log(`Already have today's articles from ${source}, skipping fetch`);
-          return [];
-        }
-      }
       
       let articles: Article[] = [];
       
       // Fetch articles based on source
       switch (source) {
         case 'reddit':
-          articles = await this.newsService.fetchFromReddit('news', this.defaultArticleLimit);
+          // Use forceFetch=true to ensure we always get fresh articles
+          articles = await this.newsService.fetchFromReddit('news', this.defaultArticleLimit, true);
           break;
         case 'twitter':
           articles = await this.newsService.fetchFromTwitter();

@@ -83,7 +83,7 @@ describe('ArticleFetcherService', () => {
 
     mockArticleStore = {
       storeArticles: jest.fn().mockResolvedValue(redditArticles.length),
-      hasTodaysArticles: jest.fn().mockResolvedValue(false),
+      getTodaysArticleCount: jest.fn().mockResolvedValue(0),
       getArticles: jest.fn().mockResolvedValue([])
     } as any;
 
@@ -142,7 +142,7 @@ describe('ArticleFetcherService', () => {
       await articleFetcherService.fetchAndStoreArticles();
       
       // Verify that articles were fetched from all sources
-      expect(fetchFromSourceSpy).toHaveBeenCalledWith('reddit');
+      expect(fetchFromSourceSpy).toHaveBeenCalledWith('reddit', true);
       expect(fetchFromSourceSpy).toHaveBeenCalledWith('twitter', false);
       expect(fetchFromSourceSpy).toHaveBeenCalledWith('washington_post', false);
       
@@ -150,24 +150,19 @@ describe('ArticleFetcherService', () => {
       expect(mockArticleStore.storeArticles).toHaveBeenCalledWith(redditArticles);
     });
 
-    it('should not fetch from sources that already have articles for today', async () => {
-      // Setup mocks for hasTodaysArticles to return true for reddit
-      mockArticleStore.hasTodaysArticles.mockImplementation((source: string) => {
-        return Promise.resolve(source === 'reddit');
+    it('should fetch articles from all sources regardless of existing articles', async () => {
+      // Setup mocks for getTodaysArticleCount to return 5 for reddit
+      mockArticleStore.getTodaysArticleCount.mockImplementation((source: string) => {
+        return Promise.resolve(source === 'reddit' ? 5 : 0);
       });
       
       // Create a spy for the original fetchFromSource method
       const originalFetchFromSource = articleFetcherService['fetchFromSource'];
       
-      // Create a mock implementation that respects hasTodaysArticles
-      const mockFetchFromSource = jest.fn().mockImplementation(async (source: string, _checkForExisting = true) => {
-        // If it's reddit and we're checking for existing articles, return empty array
-        // since hasTodaysArticles will return true for reddit
-        if (source === 'reddit' && _checkForExisting) {
-          return [];
-        }
-        
-        // Otherwise return the mock articles
+      // Create a mock implementation for fetchFromSource
+      const mockFetchFromSource = jest.fn().mockImplementation(async (source: string, _forceFetch = true) => {
+        // Return mock articles based on source
+        if (source === 'reddit') return redditArticles;
         if (source === 'twitter') return twitterArticles;
         if (source === 'washington_post') return washingtonPostArticles;
         return [];
@@ -183,20 +178,15 @@ describe('ArticleFetcherService', () => {
         await articleFetcherService.fetchAndStoreArticles();
         
         // Verify that our mock was called with the expected arguments
-        // In the actual implementation, the default value for checkForExisting is true
-        // but it's not explicitly passed for 'reddit'
-        expect(mockFetchFromSource).toHaveBeenCalledWith('reddit');
+        // In the actual implementation, we now pass forceFetch=true for Reddit
+        // to ensure we always get fresh articles
+        expect(mockFetchFromSource).toHaveBeenCalledWith('reddit', true);
         expect(mockFetchFromSource).toHaveBeenCalledWith('twitter', false);
         expect(mockFetchFromSource).toHaveBeenCalledWith('washington_post', false);
         
-        // Check if storeArticles was called at all
-        if (mockArticleStore.storeArticles.mock.calls.length > 0) {
-          // If it was called, verify it was called with an empty array
-          expect(mockArticleStore.storeArticles).toHaveBeenCalledWith([]);
-        } else {
-          // If it wasn't called, that's also acceptable since there are no real articles to store
-          console.log('storeArticles was not called, which is acceptable when there are no real articles');
-        }
+        // Check if storeArticles was called
+        // With our changes, it will be called with the redditArticles
+        expect(mockArticleStore.storeArticles).toHaveBeenCalledWith(redditArticles);
       } finally {
         // Restore the original method
         articleFetcherService['fetchFromSource'] = originalFetchFromSource;
@@ -229,9 +219,9 @@ describe('ArticleFetcherService', () => {
         // Execute the method
         await articleFetcherService.fetchAndStoreArticles();
         
-        // Verify that our mock was called only with 'reddit'
+        // Verify that our mock was called only with 'reddit' and forceFetch=true
         // The method catches errors and won't continue to other sources if reddit fails
-        expect(mockFetchFromSource).toHaveBeenCalledWith('reddit');
+        expect(mockFetchFromSource).toHaveBeenCalledWith('reddit', true);
         
         // Make sure storeArticles was not called since there was an error
         expect(mockArticleStore.storeArticles).not.toHaveBeenCalled();

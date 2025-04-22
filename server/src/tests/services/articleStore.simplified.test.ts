@@ -100,17 +100,17 @@ describe('ArticleStore Simplified Tests', () => {
       consoleWarnSpy.mockRestore();
     });
     
-    it('should check MongoDB connection before checking for today\'s articles', async () => {
+    it('should check MongoDB connection before counting today\'s articles', async () => {
       // Mock MongoManager.isConnected to return false
       (MongoManager.isConnected as jest.Mock).mockReturnValue(false);
       
       // Call the method
-      const result = await articleStore.hasTodaysArticles('reddit');
+      const result = await articleStore.getTodaysArticleCount('reddit');
       
       // Verify results
-      expect(result).toBe(false);
+      expect(result).toBe(0);
       expect(MongoManager.isConnected).toHaveBeenCalled();
-      // The hasTodaysArticles method doesn't log a warning when MongoDB is not connected
+      // The getTodaysArticleCount method doesn't log a warning when MongoDB is not connected
     });
   });
   
