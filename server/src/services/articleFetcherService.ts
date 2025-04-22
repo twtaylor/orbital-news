@@ -15,7 +15,7 @@ export class ArticleFetcherService {
   private cronJob: cron.ScheduledTask | null = null;
   private isRunning: boolean = false;
   private fetchCount: number = 0;
-  private readonly defaultArticleLimit: number = 30; // Increased from 10 to 30
+  private readonly defaultArticleLimit: number = 50; // Increased from 30 to 50
   private lastFetchTime: Date | null = null;
 
   constructor() {

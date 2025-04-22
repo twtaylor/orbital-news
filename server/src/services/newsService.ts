@@ -6,21 +6,21 @@ import { RedditService } from './redditService';
  * NewsService handles fetching and processing articles from various data sources
  */
 export class NewsService {
-  private redditService: RedditService;
+  private _redditService: RedditService;
   
   constructor() {
-    this.redditService = new RedditService();
+    this._redditService = new RedditService();
   }
   
   /**
    * Fetch articles from Reddit
    * @param subreddit Optional subreddit to fetch from (default: 'news')
-   * @param limit Optional number of articles to fetch (default: 10)
+   * @param limit Optional number of articles to fetch (default: 50)
    * @returns Promise with array of articles
    */
-  async fetchFromReddit(subreddit: string = 'news', limit: number = 10): Promise<Article[]> {
+  async fetchFromReddit(subreddit: string = 'news', limit: number = 50): Promise<Article[]> {
     console.log(`Fetching from Reddit subreddit: ${subreddit}, limit: ${limit}`);
-    return this.redditService.fetchArticles(subreddit, limit);
+    return this._redditService.fetchArticles(subreddit, limit);
   }
   
   /**
@@ -168,18 +168,6 @@ export class NewsService {
         mass: 170000
       }
     ];
-  }
-
-  /**
-   * This method is no longer used as we've switched to a tier-based approach
-   * Kept for reference only
-   */
-  _legacyCalculatePosition(_articleLocation: string, _userZipCode: string): void {
-    // This method is no longer used
-    // We now use the determineTier function to assign a tier to each article
-    // The frontend will calculate the actual position based on the tier
-    console.log('Legacy method called - should not be used');
-    return;
   }
 
   /**

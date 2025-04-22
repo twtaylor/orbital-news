@@ -16,9 +16,11 @@ export const getArticles = async (req: Request, res: Response): Promise<void> =>
   try {
     const source = req.query.source as string;
     const location = req.query.location as string;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 30; // Default to 30 articles
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50; // Default to 50 articles
     const daysBack = req.query.daysBack ? parseInt(req.query.daysBack as string) : 7; // Default to 7 days
-    const userZipCode = req.query.userZipCode as string; // User's zip code for distance calculation
+    
+    // Accept both zipCode and userZipCode parameters for compatibility
+    const userZipCode = (req.query.userZipCode || req.query.zipCode) as string; // User's zip code for distance calculation
     
     // Fetch articles from the database only - no fetching from external APIs
     const articles = await articleStoreInstance.getArticles({

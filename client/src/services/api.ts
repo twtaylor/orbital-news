@@ -17,7 +17,7 @@ export const ArticleService = {
   async getArticles(zipCode?: string, query?: string): Promise<Article[]> {
     try {
       const params: Record<string, string> = {};
-      if (zipCode) params.zipCode = zipCode;
+      if (zipCode) params.userZipCode = zipCode; // Changed from zipCode to userZipCode to match server expectation
       if (query) params.query = query;
       
       const response = await axios.get<ArticleResponse>(`${API_URL}/articles`, { params });
@@ -46,5 +46,4 @@ export const ArticleService = {
     }
   },
 
-  // markArticleAsRead method removed as we no longer track read status
 };
