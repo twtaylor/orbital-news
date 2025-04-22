@@ -1,6 +1,5 @@
 import { RedditService } from '../../services/redditService';
-import { ArticleStore } from '../../services/articleStore';
-import { Article, TierType } from '../../types/models/article.type';
+import { TierType } from '../../types/models/article.type';
 
 // Mock the articleStore module
 jest.mock('../../services/articleStore', () => {
@@ -23,14 +22,13 @@ jest.mock('../../services/articleStore', () => {
 });
 
 // Import the mocks directly
-const { mockGetArticles, mockHasTodaysArticles, mockStoreArticles } = jest.requireMock('../../services/articleStore');
+const { mockHasTodaysArticles, mockStoreArticles } = jest.requireMock('../../services/articleStore');
 
 // Set a longer timeout for all tests in this file
 jest.setTimeout(15000); // 15 seconds
 
 describe('RedditService E2E', () => {
   let redditService: RedditService;
-  let mockArticleStore: ArticleStore;
   
   beforeEach(() => {
     // Reset mocks before each test
@@ -38,7 +36,6 @@ describe('RedditService E2E', () => {
     
     // Create a new instance of RedditService for each test
     redditService = new RedditService();
-    mockArticleStore = new ArticleStore();
     
     // Mock the hasTodaysArticles method to return true (to avoid auto-fetching)
     mockHasTodaysArticles.mockResolvedValue(true);

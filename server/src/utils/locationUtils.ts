@@ -1,4 +1,4 @@
-import { Article, ArticleLocation } from '../types/models/article.type';
+import { ArticleLocation } from '../types/models/article.type';
 
 /**
  * Utility functions for handling location data

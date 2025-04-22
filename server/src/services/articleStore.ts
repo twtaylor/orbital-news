@@ -1,6 +1,6 @@
-import { Article, ArticleLocation, TierType } from '../types/models/article.type';
-import ArticleModel, { ArticleDocument } from '../models/ArticleSchema';
-import MongoManager from '../database/MongoManager';
+import { Article } from '../types/models/article.type';
+import articleModel from '../models/ArticleSchema';
+import mongoManager from '../database/MongoManager';
 import { GeocodingService } from './geocodingService';
 
 /**
@@ -18,7 +18,7 @@ export class ArticleStore {
    * @returns Number of articles successfully stored
    */
   async storeArticles(articles: Article[]): Promise<number> {
-    if (!MongoManager.isConnected()) {
+    if (!mongoManager.isConnected()) {
       console.warn('MongoDB not connected, skipping article storage');
       return 0;
     }
@@ -29,7 +29,7 @@ export class ArticleStore {
       // Process each article
       for (const article of articles) {
         // Check if article already exists
-        const existingArticle = await ArticleModel.findOne({ articleId: article.id });
+        const existingArticle = await articleModel.findOne({ articleId: article.id });
         
         if (existingArticle) {
           // Update existing article with new data
@@ -43,7 +43,7 @@ export class ArticleStore {
           savedCount++;
         } else {
           // Create new article document
-          const newArticle = new ArticleModel({
+          const newArticle = new articleModel({
             articleId: article.id, // Map id to articleId for MongoDB
             title: article.title,
             content: article.content,
@@ -82,7 +82,7 @@ export class ArticleStore {
     daysBack?: number;
     articleId?: string; // Added articleId parameter
   } = {}): Promise<Article[]> {
-    if (!MongoManager.isConnected()) {
+    if (!mongoManager.isConnected()) {
       console.warn('MongoDB not connected, returning empty results');
       return [];
     }
@@ -121,7 +121,7 @@ export class ArticleStore {
       }
       
       // Execute query
-      const storedArticles = await ArticleModel.find(query)
+      const storedArticles = await articleModel.find(query)
         .sort({ publishedAt: -1 })
         .limit(limit)
         .lean();
@@ -160,7 +160,7 @@ export class ArticleStore {
    * @returns True if we have articles for today
    */
   async hasTodaysArticles(source: string): Promise<boolean> {
-    if (!MongoManager.isConnected()) {
+    if (!mongoManager.isConnected()) {
       return false;
     }
 
@@ -176,7 +176,7 @@ export class ArticleStore {
       };
       
       // Check if we have any articles fetched today
-      const count = await ArticleModel.countDocuments(query);
+      const count = await articleModel.countDocuments(query);
       return count > 0;
     } catch (error) {
       console.error('Error checking today\'s articles:', error);

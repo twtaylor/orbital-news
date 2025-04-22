@@ -205,7 +205,7 @@ export class RedditService {
     const cappedMass = Math.max(10000, Math.min(500000, mass)); // Limit mass between 10k and 500k
     
     // Default location from post flair
-    let location = post.link_flair_text || '';
+    const location = post.link_flair_text || '';
 
     // Create a default zipCode for string-based locations
     // We'll use a default zipCode for the article when we don't have a specific one

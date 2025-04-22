@@ -1,5 +1,6 @@
 // Ensure mongoose is mocked before any imports that might use it
-jest.mock('mongoose', () => require('../mocks/mongooseMock').default);
+import mongooseMock from '../mocks/mongooseMock';
+jest.mock('mongoose', () => mongooseMock);
 
 import { ArticleFetcherService } from '../../services/articleFetcherService';
 import ArticleStore from '../../services/articleStore';
@@ -159,10 +160,10 @@ describe('ArticleFetcherService', () => {
       const originalFetchFromSource = articleFetcherService['fetchFromSource'];
       
       // Create a mock implementation that respects hasTodaysArticles
-      const mockFetchFromSource = jest.fn().mockImplementation(async (source: string, checkForExisting = true) => {
+      const mockFetchFromSource = jest.fn().mockImplementation(async (source: string, _checkForExisting = true) => {
         // If it's reddit and we're checking for existing articles, return empty array
         // since hasTodaysArticles will return true for reddit
-        if (source === 'reddit' && checkForExisting) {
+        if (source === 'reddit' && _checkForExisting) {
           return [];
         }
         
@@ -207,7 +208,7 @@ describe('ArticleFetcherService', () => {
       const originalFetchFromSource = articleFetcherService['fetchFromSource'];
       
       // Create a mock implementation that simulates an error with reddit
-      const mockFetchFromSource = jest.fn().mockImplementation(async (source: string, checkForExisting = true) => {
+      const mockFetchFromSource = jest.fn().mockImplementation(async (source: string, _checkForExisting = true) => {
         if (source === 'reddit') {
           throw new Error('API error');
         }

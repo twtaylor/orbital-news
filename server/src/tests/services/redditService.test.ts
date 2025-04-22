@@ -1,4 +1,4 @@
-import { Article, ArticleWithTier, TierType } from '../../types/models/article.type';
+import { TierType } from '../../types/models/article.type';
 import * as dotenv from 'dotenv';
 import 'jest';
 
@@ -12,15 +12,7 @@ jest.mock('../../database/MongoManager');
 
 // Import after mocking dependencies
 import { RedditService } from '../../services/redditService';
-import { ArticleStore } from '../../services/articleStore';
-import { LocationService } from '../../services/locationService';
 import MongoManager from '../../database/MongoManager';
-
-// Store original fetch and console methods for restoration after tests
-const originalFetch = global.fetch;
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
 
 /**
  * Combined Jest test for the RedditService
@@ -237,52 +229,6 @@ describe('RedditService', () => {
   
   // Test for integration with ArticleStore
   test('should store articles in ArticleStore', async () => {
-    // Create test articles
-    const mockArticles = [
-      {
-        id: 'reddit-test1',
-        title: 'Test Article 1',
-        content: 'This is test content for article 1',
-        source: 'reddit',
-        sourceUrl: 'https://reddit.com/r/test/1',
-        author: 'testuser1',
-        publishedAt: new Date().toISOString(),
-        location: 'New York',
-        tags: ['test', 'article'],
-        mass: 120000,
-        tier: 'medium' as TierType,
-        
-      },
-      {
-        id: 'reddit-test2',
-        title: 'Test Article 2',
-        content: 'This is test content for article 2',
-        source: 'reddit',
-        sourceUrl: 'https://reddit.com/r/test/2',
-        author: 'testuser2',
-        publishedAt: new Date().toISOString(),
-        location: 'San Francisco',
-        tags: ['test', 'article'],
-        mass: 180000,
-        tier: 'medium' as TierType,
-        
-      },
-      {
-        id: 'reddit-test3',
-        title: 'Test Article 3',
-        content: 'This is test content for article 3',
-        source: 'reddit',
-        sourceUrl: 'https://reddit.com/r/test/3',
-        author: 'testuser3',
-        publishedAt: new Date().toISOString(),
-        location: 'Chicago',
-        tags: ['test', 'article'],
-        mass: 90000,
-        tier: 'far' as TierType,
-        
-      }
-    ];
-    
     // Mock the getAccessToken method to avoid actual API calls
     jest.spyOn(redditService as any, 'getAccessToken').mockResolvedValue('mock-token');
     

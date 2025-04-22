@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import ArticleStore from '../services/articleStore';
+import articleStore from '../services/articleStore';
 import { articleFetcher } from '../services/articleFetcherService';
 import { GeocodingService } from '../services/geocodingService';
 import { addTierToArticle } from './articleController.helpers';
 
 // Initialize services
-const articleStore = new ArticleStore();
+const articleStoreInstance = new articleStore();
 const geocodingService = new GeocodingService();
 
 /**
@@ -21,7 +21,7 @@ export const getArticles = async (req: Request, res: Response): Promise<void> =>
     const userZipCode = req.query.userZipCode as string; // User's zip code for distance calculation
     
     // Fetch articles from the database only - no fetching from external APIs
-    const articles = await articleStore.getArticles({
+    const articles = await articleStoreInstance.getArticles({
       source,
       location,
       limit,
@@ -71,7 +71,7 @@ export const getArticleById = async (req: Request, res: Response): Promise<void>
     const { id } = req.params;
     
     // Fetch articles from the database with a filter for the ID
-    const articles = await articleStore.getArticles({
+    const articles = await articleStoreInstance.getArticles({
       articleId: id,
       limit: 1
     });

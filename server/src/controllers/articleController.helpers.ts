@@ -2,7 +2,7 @@
  * Helper functions for article controller
  */
 
-import { Article, ArticleWithTier, TierType, Distance } from '../types/models/article.type';
+import { Article, ArticleWithTier, TierType } from '../types/models/article.type';
 import { GeocodingService } from '../services/geocodingService';
 
 // Initialize geocoding service

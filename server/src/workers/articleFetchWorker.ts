@@ -4,10 +4,10 @@
  */
 import { parentPort, workerData } from 'worker_threads';
 import { NewsService } from '../services/newsService';
-import ArticleStore from '../services/articleStore';
+import articleStore from '../services/articleStore';
 import { GeocodingService } from '../services/geocodingService';
 import { Article } from '../types/models/article.type';
-import MongoManager from '../database/MongoManager';
+import mongoManager from '../database/MongoManager';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
@@ -27,7 +27,7 @@ async function runWorker() {
   
   // Initialize services
   const newsService = new NewsService();
-  const articleStore = new ArticleStore();
+  const articleStoreInstance = new articleStore();
   const geocodingService = new GeocodingService();
   const defaultArticleLimit = workerData.defaultArticleLimit || 30;
   
@@ -37,12 +37,12 @@ async function runWorker() {
   try {
     // Connect to MongoDB
     log('Connecting to MongoDB...', 'info');
-    await MongoManager.connect();
+    await mongoManager.connect();
     log('Connected to MongoDB', 'info');
     
     // Fetch articles from Reddit (real data source)
     log('Fetching articles from Reddit...', 'info');
-    const redditArticles = await fetchFromSource('reddit', newsService, articleStore, defaultArticleLimit);
+    const redditArticles = await fetchFromSource('reddit', newsService, articleStoreInstance, defaultArticleLimit);
     log(`Fetched ${redditArticles.length} articles from Reddit`, 'info');
     
     // Process and geocode the articles
@@ -57,14 +57,14 @@ async function runWorker() {
     // Fetch articles from other sources (these are currently mocked)
     // but don't store them in the database
     log('Fetching mock articles from other sources...', 'debug');
-    const twitterArticles = await fetchFromSource('twitter', newsService, articleStore, defaultArticleLimit, false);
-    const washingtonPostArticles = await fetchFromSource('washington_post', newsService, articleStore, defaultArticleLimit, false);
+    const twitterArticles = await fetchFromSource('twitter', newsService, articleStoreInstance, defaultArticleLimit, false);
+    const washingtonPostArticles = await fetchFromSource('washington_post', newsService, articleStoreInstance, defaultArticleLimit, false);
     log(`Fetched ${twitterArticles.length} mock Twitter articles and ${washingtonPostArticles.length} mock Washington Post articles`, 'debug');
     
     // Store articles in the database
     if (articlesToStore.length > 0) {
       log(`Storing ${articlesToStore.length} articles in the database...`, 'info');
-      storedCount = await articleStore.storeArticles(articlesToStore);
+      storedCount = await articleStoreInstance.storeArticles(articlesToStore);
       log(`Stored ${storedCount} articles in the database`, 'info');
     } else {
       log('No articles to store in the database', 'info');
@@ -72,7 +72,7 @@ async function runWorker() {
     
     // Disconnect from MongoDB
     log('Disconnecting from MongoDB...', 'debug');
-    await MongoManager.disconnect();
+    await mongoManager.disconnect();
     log('Disconnected from MongoDB', 'debug');
     
     // Send completion message to main thread
@@ -90,7 +90,7 @@ async function runWorker() {
     
     // Try to disconnect from MongoDB if there was an error
     try {
-      await MongoManager.disconnect();
+      await mongoManager.disconnect();
     } catch (disconnectError) {
       log(`Error disconnecting from MongoDB: ${disconnectError}`, 'error');
     }
@@ -113,7 +113,7 @@ async function runWorker() {
 async function fetchFromSource(
   source: string, 
   newsService: NewsService, 
-  articleStore: ArticleStore, 
+  articleStoreInstance: any, 
   limit: number,
   checkForExisting: boolean = true
 ): Promise<Article[]> {
@@ -122,7 +122,7 @@ async function fetchFromSource(
     
     // Check if we already have today's articles from this source (if requested)
     if (checkForExisting) {
-      const hasTodaysArticles = await articleStore.hasTodaysArticles(source);
+      const hasTodaysArticles = await articleStoreInstance.hasTodaysArticles(source);
       
       if (hasTodaysArticles) {
         log(`Already have today's articles from ${source}, skipping fetch`, 'info');

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Article, TierType } from '../../types/models/article.type';
+import { Article } from '../../types/models/article.type';
 import { getArticles, getArticleById, getArticleFetcherStatus, triggerArticleFetch } from '../../controllers/articleController';
 
 // Mock the articleStore module
@@ -67,7 +67,7 @@ jest.mock('../../services/articleFetcherService', () => {
 
 // Import the mocks directly
 const { mockGetArticles } = jest.requireMock('../../services/articleStore');
-const { mockGetUserLocation, mockCalculateDistance, mockDetermineTierFromDistance, mockGetDefaultUserZipCode, mockSetUserLocationByZipCode } = jest.requireMock('../../services/geocodingService');
+const { _mockGetUserLocation, _mockCalculateDistance, _mockDetermineTierFromDistance, _mockGetDefaultUserZipCode, mockSetUserLocationByZipCode } = jest.requireMock('../../services/geocodingService');
 const { mockFetchAndStoreArticles, mockGetStatus } = jest.requireMock('../../services/articleFetcherService');
 
 // Set a longer timeout for all tests in this file

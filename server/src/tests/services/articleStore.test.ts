@@ -1,7 +1,7 @@
 import { ArticleStore } from '../../services/articleStore';
 import ArticleModel from '../../models/ArticleSchema';
 import MongoManager from '../../database/MongoManager';
-import { Article, ArticleLocation, TierType } from '../../types/models/article.type';
+import { Article, ArticleLocation } from '../../types/models/article.type';
 
 // Mock the ArticleModel
 jest.mock('../../models/ArticleSchema', () => {
@@ -76,7 +76,7 @@ describe('ArticleStore', () => {
   };
   
   // Mock article with structured location
-  const mockArticleWithStructuredLocation: Article = {
+  const _mockArticleWithStructuredLocation: Article = {
     id: 'test-456',
     title: 'Test Article with Structured Location',
     content: 'This is a test article with structured location data',

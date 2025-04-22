@@ -1,6 +1,6 @@
 import nlp from 'compromise';
 import fetch from 'node-fetch';
-import { Article, TierType } from '../types/models/article.type';
+import { Article } from '../types/models/article.type';
 import { 
   Location, 
   LocationExtractionResult,

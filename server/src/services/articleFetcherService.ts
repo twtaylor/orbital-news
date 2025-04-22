@@ -1,16 +1,16 @@
 import cron from 'node-cron';
+import { CronExpressionParser } from 'cron-parser';
 import { NewsService } from './newsService';
-import ArticleStore from './articleStore';
+import articleStore from './articleStore';
 import { Article } from '../types/models/article.type';
 import { GeocodingService } from './geocodingService';
-import MongoManager from '../database/MongoManager';
 
 /**
  * Service for fetching articles on a schedule and storing them in the database
  */
 export class ArticleFetcherService {
   private newsService: NewsService;
-  private articleStore: ArticleStore;
+  private articleStore: any;
   private geocodingService: GeocodingService;
   private cronJob: cron.ScheduledTask | null = null;
   private isRunning: boolean = false;
@@ -20,7 +20,7 @@ export class ArticleFetcherService {
 
   constructor() {
     this.newsService = new NewsService();
-    this.articleStore = new ArticleStore();
+    this.articleStore = new articleStore();
     this.geocodingService = new GeocodingService();
   }
 
@@ -180,7 +180,7 @@ export class ArticleFetcherService {
       if (!expression) return null;
       
       // Use cron-parser to get the next run time
-      const interval = require('cron-parser').parseExpression(expression);
+      const interval = CronExpressionParser.parse(expression);
       return interval.next().toISOString();
     } catch (error) {
       console.error('Error calculating next scheduled run:', error);

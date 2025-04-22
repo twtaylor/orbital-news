@@ -1,4 +1,3 @@
-import MongoManager from '../../database/MongoManager';
 
 /**
  * Test suite for MongoManager

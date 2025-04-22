@@ -1,5 +1,5 @@
 // No longer need to import determineTier as tier is calculated dynamically in the controller
-import { Article, TierType } from '../types/models/article.type';
+import { Article } from '../types/models/article.type';
 import { RedditService } from './redditService';
 
 /**
@@ -174,7 +174,7 @@ export class NewsService {
    * This method is no longer used as we've switched to a tier-based approach
    * Kept for reference only
    */
-  _legacyCalculatePosition(articleLocation: string, userZipCode: string): void {
+  _legacyCalculatePosition(_articleLocation: string, _userZipCode: string): void {
     // This method is no longer used
     // We now use the determineTier function to assign a tier to each article
     // The frontend will calculate the actual position based on the tier
@@ -184,14 +184,14 @@ export class NewsService {
 
   /**
    * Fetch articles from all configured sources
-   * @param userZipCode The user's zip code for location relevance
+   * @param _userZipCode The user's zip code for location relevance
    * @param query Optional search query
    * @returns Promise with array of articles from all sources
    */
-  async fetchAllArticles(userZipCode: string, query?: string): Promise<Article[]> {
+  async fetchAllArticles(_userZipCode: string, query?: string): Promise<Article[]> {
     try {
       // Fetch from all sources in parallel
-      const [redditArticles, twitterArticles, wapoArticles] = await Promise.all([
+      const [redditArticles, _twitterArticles, _wapoArticles] = await Promise.all([
         this.fetchFromReddit(query),
         this.fetchFromTwitter(query),
         this.fetchFromWashingtonPost(query)

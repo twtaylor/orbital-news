@@ -4,18 +4,18 @@
  */
 
 class MockSchema {
-  private options: any;
-  private paths: any;
-  private indices: any[];
+  private _options: any;
+  private _paths: any;
+  private _indices: any[];
 
-  constructor(definition: any, options: any = {}) {
-    this.options = options;
-    this.paths = definition;
-    this.indices = [];
+  constructor(_definition: any, _options: any = {}) {
+    this._options = _options;
+    this._paths = _definition;
+    this._indices = [];
   }
 
-  index(fields: any, options: any = {}) {
-    this.indices.push({ fields, options });
+  index(_fields: any, _options: any = {}) {
+    this._indices.push({ fields: _fields, options: _options });
     return this;
   }
 
@@ -44,41 +44,41 @@ class MockSchema {
 }
 
 class MockModel {
-  private name: string;
-  private schema: any;
-  private documents: any[] = [];
+  private _name: string;
+  private _schema: any;
+  private _documents: any[] = [];
 
-  constructor(name: string, schema: any) {
-    this.name = name;
-    this.schema = schema;
+  constructor(_name: string, _schema: any) {
+    this._name = _name;
+    this._schema = _schema;
   }
 
-  find = jest.fn().mockImplementation((query = {}) => {
+  find = jest.fn().mockImplementation((_query = {}) => {
     return {
       sort: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
-      lean: jest.fn().mockResolvedValue(this.documents),
-      exec: jest.fn().mockResolvedValue(this.documents)
+      lean: jest.fn().mockResolvedValue(this._documents),
+      exec: jest.fn().mockResolvedValue(this._documents)
     };
   });
 
-  findOne = jest.fn().mockImplementation((query = {}) => {
+  findOne = jest.fn().mockImplementation((_query = {}) => {
     return {
-      lean: jest.fn().mockResolvedValue(this.documents[0] || null),
-      exec: jest.fn().mockResolvedValue(this.documents[0] || null)
+      lean: jest.fn().mockResolvedValue(this._documents[0] || null),
+      exec: jest.fn().mockResolvedValue(this._documents[0] || null)
     };
   });
 
-  findOneAndUpdate = jest.fn().mockImplementation((query = {}, update = {}, options = {}) => {
-    const doc = this.documents[0] || { _id: 'mock-id-' + Math.random().toString(36).substring(7) };
+  findOneAndUpdate = jest.fn().mockImplementation((_query = {}, update = {}, _options = {}) => {
+    const doc = this._documents[0] || { _id: 'mock-id-' + Math.random().toString(36).substring(7) };
     return {
       lean: jest.fn().mockResolvedValue({ ...doc, ...update }),
       exec: jest.fn().mockResolvedValue({ ...doc, ...update })
     };
   });
 
-  countDocuments = jest.fn().mockResolvedValue(this.documents.length);
+  countDocuments = jest.fn().mockResolvedValue(this._documents.length);
 
   deleteMany = jest.fn().mockResolvedValue({ deletedCount: 0 });
 
@@ -88,7 +88,7 @@ class MockModel {
       _id: 'mock-id-' + Math.random().toString(36).substring(7),
       save: jest.fn().mockResolvedValue(doc)
     };
-    this.documents.push(newDoc);
+    this._documents.push(newDoc);
     return Promise.resolve(newDoc);
   });
 
@@ -97,7 +97,7 @@ class MockModel {
       ...doc,
       _id: 'mock-id-' + Math.random().toString(36).substring(7)
     }));
-    this.documents.push(...newDocs);
+    this._documents.push(...newDocs);
     return Promise.resolve(newDocs);
   });
 

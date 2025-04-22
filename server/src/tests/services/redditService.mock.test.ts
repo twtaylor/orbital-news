@@ -35,7 +35,7 @@ class MockRedditService {
   }
   
   // Mock the fetchArticles method
-  async fetchArticles(subreddit: string = 'news', limit: number = 25, timeframe: string = 'day', forceRefresh: boolean = false): Promise<Article[]> {
+  async fetchArticles(_subreddit: string = 'news', limit: number = 25, timeframe: string = 'day', forceRefresh: boolean = false): Promise<Article[]> {
     // If not forcing refresh, try to get from store first
     if (!forceRefresh) {
       try {

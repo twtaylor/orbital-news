@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { Article, TierType, ArticleLocation } from '../types/models/article.type';
+import { Article, ArticleLocation } from '../types/models/article.type';
 
 // Interface for the MongoDB document that extends the Article interface
 // Use Omit to avoid conflicts between Article.id and Document._id

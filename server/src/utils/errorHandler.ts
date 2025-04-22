@@ -15,7 +15,7 @@ export class ApiError extends Error {
 /**
  * Catch async errors in route handlers
  */
-export const catchAsync = (fn: Function) => {
+export const catchAsync = (fn: any) => {
   return (req: any, res: any, next: any) => {
     fn(req, res, next).catch(next);
   };
@@ -24,7 +24,7 @@ export const catchAsync = (fn: Function) => {
 /**
  * Global error handler middleware
  */
-export const globalErrorHandler = (err: any, req: any, res: any, next: any) => {
+export const globalErrorHandler = (err: any, req: any, res: any, _: any) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
   

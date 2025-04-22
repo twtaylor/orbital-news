@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import routes from './routes';
 import { globalErrorHandler } from './utils/errorHandler';
-import MongoManager from './database/MongoManager';
+import mongoManager from './database/MongoManager';
 import { articleFetcher } from './services/articleFetcherService';
 
 // Load environment variables
@@ -33,7 +33,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 app.use('/api', routes);
 
 // Handle 404 errors
-app.all('*', (req: Request, res: Response, next: NextFunction) => {
+app.all('*', (req: Request, res: Response, _next: NextFunction) => {
   res.status(404).json({
     status: 'fail',
     message: `Can't find ${req.originalUrl} on this server!`
@@ -44,7 +44,7 @@ app.all('*', (req: Request, res: Response, next: NextFunction) => {
 app.use(globalErrorHandler);
 
 // Function to start the server
-const startServer = () => {
+const startServer = (): ReturnType<typeof app.listen> => {
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -57,7 +57,7 @@ const startServer = () => {
 
 // Connect to MongoDB and start server
 console.log('🔌 Connecting to MongoDB...');
-MongoManager.connect()
+mongoManager.connect()
   .then(() => {
     console.log('💾 MongoDB connection initialized');
     console.log('🔄 Article storage enabled for improved performance');
@@ -71,7 +71,7 @@ MongoManager.connect()
     const server = startServer();
     
     // Handle graceful shutdown
-    process.on('SIGTERM', () => {
+    process.on('uncaughtException', (_err) => {
       console.log('SIGTERM received, shutting down gracefully');
       
       // Stop the article fetcher
@@ -80,7 +80,7 @@ MongoManager.connect()
       
       server.close(() => {
         console.log('Server closed');
-        MongoManager.disconnect()
+        mongoManager.disconnect()
           .then(() => {
             console.log('MongoDB disconnected');
             process.exit(0);
@@ -89,7 +89,7 @@ MongoManager.connect()
       });
     });
   })
-  .catch((err: Error) => {
+  .catch((_err: Error) => {
     console.error('❌ MongoDB connection failed');
     console.error('🚫 Server startup aborted - MongoDB is required');
     console.log('💡 Start MongoDB with `pnpm mongo:start` and try again');

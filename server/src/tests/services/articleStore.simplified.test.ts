@@ -1,6 +1,7 @@
 import { ArticleStore } from '../../services/articleStore';
 import MongoManager from '../../database/MongoManager';
-import { Article, TierType } from '../../types/models/article.type';
+import { Article } from '../../types/models/article.type';
+import ArticleModel from '../../models/ArticleSchema';
 
 // Mock the MongoManager
 jest.mock('../../database/MongoManager', () => ({
@@ -13,27 +14,27 @@ jest.mock('../../database/MongoManager', () => ({
 }));
 
 // Mock ArticleModel without importing it directly
-jest.mock('../../models/ArticleSchema', () => ({
-  __esModule: true,
-  default: {
-    findOne: jest.fn(),
-    find: jest.fn().mockReturnValue({
-      sort: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-      lean: jest.fn()
-    }),
-    countDocuments: jest.fn(),
-    prototype: {
-      save: jest.fn()
+jest.mock('../../models/ArticleSchema', () => {
+  const mockFindOne = jest.fn();
+  const mockFind = jest.fn();
+  
+  return {
+    __esModule: true,
+    default: {
+      findOne: mockFindOne,
+      find: mockFind,
+      countDocuments: jest.fn(),
+      prototype: {
+        save: jest.fn()
+      }
     }
-  }
-}));
+  };
+});
 
 describe('ArticleStore Simplified Tests', () => {
   let articleStore: ArticleStore;
   
-  // Get the mocked ArticleModel
-  const ArticleModel = require('../../models/ArticleSchema').default;
+  // Use the imported ArticleModel
   
   // Sample article for testing
   const sampleArticle: Article = {
@@ -116,7 +117,9 @@ describe('ArticleStore Simplified Tests', () => {
   describe('Error Handling', () => {
     it('should handle errors when storing articles', async () => {
       // Mock ArticleModel.findOne to throw an error
-      ArticleModel.findOne.mockRejectedValue(new Error('Database error'));
+      jest.spyOn(ArticleModel, 'findOne').mockImplementation(() => {
+        throw new Error('Database error');
+      });
       
       // Spy on console.error
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -133,11 +136,14 @@ describe('ArticleStore Simplified Tests', () => {
     });
     
     it('should handle errors when retrieving articles', async () => {
-      // Mock ArticleModel.find.lean to throw an error
-      const mockLean = jest.fn().mockRejectedValue(new Error('Database error'));
+      // Mock ArticleModel.find to return a chainable object that throws an error
+      const mockLean = jest.fn().mockImplementation(() => {
+        throw new Error('Database error');
+      });
       const mockLimit = jest.fn().mockReturnValue({ lean: mockLean });
       const mockSort = jest.fn().mockReturnValue({ limit: mockLimit });
-      ArticleModel.find.mockReturnValue({ sort: mockSort });
+      
+      jest.spyOn(ArticleModel, 'find').mockReturnValue({ sort: mockSort } as any);
       
       // Spy on console.error
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
