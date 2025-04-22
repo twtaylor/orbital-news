@@ -70,7 +70,7 @@ describe('ArticleStore', () => {
     sourceUrl: 'https://example.com/test',
     author: 'Test Author',
     publishedAt: new Date().toISOString(),
-    location: { zipCode: '00000', city: 'Test Location' },
+    location: { location: 'Test Location', latitude: 0, longitude: 0, zipCode: '00000' },
     tags: ['test', 'article'],
     mass: 50000
   };
@@ -85,12 +85,10 @@ describe('ArticleStore', () => {
     author: 'Test Author',
     publishedAt: new Date().toISOString(),
     location: {
-      city: 'San Francisco',
-      state: 'California',
-      country: 'United States',
-      zipCode: '94103',
-      lat: 37.7749,
-      lng: -122.4194
+      location: 'San Francisco, California, United States',
+      latitude: 37.7749,
+      longitude: -122.4194,
+      zipCode: '94103'
     },
     tags: ['test', 'article', 'location'],
     mass: 60000

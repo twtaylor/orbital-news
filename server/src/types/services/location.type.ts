@@ -32,6 +32,9 @@ export interface Location {
   
   /** How many times this location was mentioned */
   mentions?: number;
+  
+  /** Flag indicating if this is a US location (for prioritization) */
+  isUSLocation?: boolean;
 }
 
 /**

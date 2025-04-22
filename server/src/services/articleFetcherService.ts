@@ -191,61 +191,69 @@ export class ArticleFetcherService {
   /**
    * Process articles with geocoding information
    * @param articles Articles to process
-   * @returns Processed articles with geocoding information
+   * @returns Processed articles with geocoding information (only those with valid coordinates)
    */
   private async processArticles(articles: Article[]): Promise<Article[]> {
     const processedArticles: Article[] = [];
     
     for (const article of articles) {
       try {
-        // Skip articles without location information
-        if (!article.location || typeof article.location === 'string') {
+        // Extract location information
+        let locationName: string | undefined;
+        
+        // Handle different location formats
+        if (typeof article.location === 'string') {
+          // If location is a string, use it directly
+          locationName = article.location;
+        } else if (article.location && typeof article.location === 'object') {
+          // Get location name from the location field
+          locationName = article.location.location;
+          
+          // If the article already has valid coordinates, use it directly
+          if (article.location.latitude !== undefined && article.location.longitude !== undefined) {
+            processedArticles.push(article);
+            continue;
+          }
+        }
+        
+        // Skip articles without a location name
+        if (!locationName) {
           console.debug(`Skipping article without location information: ${article.id}`);
           continue;
         }
         
-        // Skip articles that already have geocoding information
-        if (article.location.coordinates) {
-          processedArticles.push(article);
-          continue;
-        }
+        // Geocode the location (US locations will be prioritized by the geocoding service)
+        console.debug(`Geocoding location: ${locationName}`);
+        const geocodedLocation = await this.geocodingService.geocodeLocation(locationName);
         
-        // Get the city name from the article location
-        const cityName = article.location.city;
-        if (!cityName) {
-          console.debug(`Skipping article without city information: ${article.id}`);
-          continue;
-        }
-        
-        // Geocode the location
-        console.debug(`Geocoding location: ${cityName}`);
-        const geocodedLocation = await this.geocodingService.geocodeLocation(cityName);
-        
-        if (geocodedLocation) {
-          // Update the article with geocoded information
+        // Only include articles with valid geocoding results that have coordinates
+        if (geocodedLocation && geocodedLocation.coordinates) {
+          // Create a new location object with the required fields
           article.location = {
-            ...article.location,
-            coordinates: geocodedLocation.coordinates,
-            zipCode: geocodedLocation.zipCode || article.location.zipCode,
-            state: geocodedLocation.state,
-            country: geocodedLocation.country,
-            formattedAddress: geocodedLocation.formattedAddress
+            location: locationName,
+            latitude: geocodedLocation.coordinates.latitude,
+            longitude: geocodedLocation.coordinates.longitude,
+            zipCode: geocodedLocation.zipCode
           };
+          
+          // Log if this is a US location that was prioritized
+          if (geocodedLocation.isUSLocation) {
+            console.debug(`US location prioritized for article: ${article.id}`);
+          }
           
           console.debug(`Successfully geocoded location for article: ${article.id}`);
           processedArticles.push(article);
         } else {
-          console.warn(`Failed to geocode location for article: ${article.id}`);
-          // Still include the article even without geocoding
-          processedArticles.push(article);
+          console.warn(`Failed to geocode location for article: ${article.id}, excluding from results`);
+          // Do not include articles without valid coordinates
         }
       } catch (error) {
         console.error(`Error processing article ${article.id}:`, error);
-        // Still include the article even if there was an error
-        processedArticles.push(article);
+        // Do not include articles with errors
       }
     }
     
+    console.info(`Processed ${articles.length} articles, kept ${processedArticles.length} with valid coordinates`);
     return processedArticles;
   }
 }

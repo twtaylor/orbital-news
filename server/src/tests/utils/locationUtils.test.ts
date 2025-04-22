@@ -10,12 +10,10 @@ describe('Location Utils', () => {
   // Test data
   const stringLocation = 'New York City';
   const structuredLocation: ArticleLocation = {
-    city: 'San Francisco',
-    state: 'California',
-    country: 'United States',
+    location: 'San Francisco, California, United States',
     zipCode: '94103',
-    lat: 37.7749,
-    lng: -122.4194
+    latitude: 37.7749,
+    longitude: -122.4194
   };
   
   describe('getLocationName', () => {
@@ -29,16 +27,20 @@ describe('Location Utils', () => {
     
     it('should handle partial structured data', () => {
       const partialLocation: ArticleLocation = {
-        city: 'London',
-        country: 'United Kingdom',
-        zipCode: 'SW1A 1AA' // Adding required zipCode
+        location: 'London, United Kingdom',
+        latitude: 51.5074,
+        longitude: -0.1278,
+        zipCode: 'SW1A 1AA'
       };
       expect(getLocationName(partialLocation)).toBe('London, United Kingdom');
     });
     
     it('should handle empty structured data', () => {
       const emptyLocation: ArticleLocation = {
-        zipCode: '00000' // Adding required zipCode
+        location: 'Unknown',
+        latitude: 0,
+        longitude: 0,
+        zipCode: '00000'
       };
       expect(getLocationName(emptyLocation)).toBe('Unknown');
     });
@@ -55,9 +57,10 @@ describe('Location Utils', () => {
     
     it('should return the zip code from structured data even when it was previously optional', () => {
       const zipLocation: ArticleLocation = {
-        city: 'Paris',
-        country: 'France',
-        zipCode: '75001' // Now required
+        location: 'Paris, France',
+        latitude: 48.8566,
+        longitude: 2.3522,
+        zipCode: '75001'
       };
       expect(getZipCode(zipLocation)).toBe('75001');
     });
@@ -77,9 +80,10 @@ describe('Location Utils', () => {
     
     it('should return undefined if coordinates are not in structured data', () => {
       const noCoordinatesLocation: ArticleLocation = {
-        city: 'Tokyo',
-        country: 'Japan',
-        zipCode: '100-0001' // Adding required zipCode
+        location: 'Tokyo, Japan',
+        latitude: 0, // Adding zero coordinates for testing the 'no coordinates' case
+        longitude: 0, // Adding zero coordinates for testing the 'no coordinates' case
+        zipCode: '100-0001'
       };
       expect(getCoordinates(noCoordinatesLocation)).toBeUndefined();
     });
@@ -96,7 +100,10 @@ describe('Location Utils', () => {
     
     it('should return true for empty structured locations', () => {
       const emptyLocation: ArticleLocation = {
-        zipCode: '00000' // Adding required zipCode
+        location: 'Unknown',
+        latitude: 0,
+        longitude: 0,
+        zipCode: '00000'
       };
       expect(hasStructuredData(emptyLocation)).toBe(true);
     });

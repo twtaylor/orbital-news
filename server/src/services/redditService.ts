@@ -132,20 +132,6 @@ export class RedditService {
         // Continue with API fetch if store retrieval fails
       }
     }
-    
-    // TODO: clean up in future
-    // Use mock data if credentials aren't available
-    // if (!this.clientId || !this.clientSecret) {
-    //   console.info('Using mock Reddit data (no API credentials)');
-    //   const mockArticles = await this.getMockArticles();
-      
-    //   // Store mock articles if MongoDB is connected
-    //   if (MongoManager.isConnected()) {
-    //     await this.articleStore.storeArticles(mockArticles);
-    //   }
-      
-    //   return mockArticles;
-    // }
 
     try {
       console.info(`Fetching articles from Reddit API...`);
@@ -202,15 +188,9 @@ export class RedditService {
     } catch (error) {
       console.error('Error fetching from Reddit:', error);
       
-      // Fall back to mock data on error
-      const mockArticles = await this.getMockArticles();
-      
-      // Store mock articles if MongoDB is connected
-      if (MongoManager.isConnected()) {
-        await this.articleStore.storeArticles(mockArticles);
-      }
-      
-      return mockArticles;
+      // Return empty array if there's an error fetching from Reddit
+      console.warn('No articles will be returned due to the error');
+      return [];
     }
   }
 
@@ -231,7 +211,7 @@ export class RedditService {
     // We'll use a default zipCode for the article when we don't have a specific one
     const defaultZipCode = '00000';
 
-    // Create the base article
+    // Create the base article with a default location
     const article: Article = {
       id: `reddit-${post.id}`,
       title: post.title,
@@ -241,10 +221,13 @@ export class RedditService {
       sourceUrl: post.url,
       author: post.author,
       publishedAt: new Date(post.created_utc * 1000).toISOString(),
-      // Initialize with a structured location that includes the required zipCode
+      // Initialize with a default location that includes mandatory fields
+      // This will be replaced with actual geocoded data later if available
       location: {
-        zipCode: defaultZipCode,
-        city: location || 'Unknown'
+        location: location || 'Unknown',
+        latitude: 0,  // Default coordinates (will be replaced if geocoding succeeds)
+        longitude: 0, // Default coordinates (will be replaced if geocoding succeeds)
+        zipCode: defaultZipCode
       },
       mass: cappedMass
     };
@@ -265,12 +248,10 @@ export class RedditService {
         if (locationResult.primaryLocation.latitude && locationResult.primaryLocation.longitude) {
           // Create structured location object with required zipCode
           const structuredLocation: ArticleLocation = {
-            city: locationResult.primaryLocation.city,
-            state: locationResult.primaryLocation.region,
-            country: locationResult.primaryLocation.country,
-            zipCode: locationResult.primaryLocation.zipCode || defaultZipCode, // Ensure zipCode is always set
-            lat: locationResult.primaryLocation.latitude,
-            lng: locationResult.primaryLocation.longitude
+            location: locationResult.primaryLocation.name || 'Unknown',
+            latitude: locationResult.primaryLocation.latitude,
+            longitude: locationResult.primaryLocation.longitude,
+            zipCode: locationResult.primaryLocation.zipCode
           };
           
           // Set the structured location
@@ -282,22 +263,26 @@ export class RedditService {
             const geocodedLocation = await this.geocodingService.geocodeLocation(locationResult.primaryLocation.name);
             if (geocodedLocation && geocodedLocation.zipCode) {
               article.location = {
-                city: locationResult.primaryLocation.name,
-                zipCode: geocodedLocation.zipCode,
-                state: geocodedLocation.state,
-                country: geocodedLocation.country
+                location: locationResult.primaryLocation.name || 'Unknown',
+                latitude: geocodedLocation.coordinates.latitude,
+                longitude: geocodedLocation.coordinates.longitude,
+                zipCode: geocodedLocation.zipCode
               };
             } else {
               // If geocoding fails, use the default zipCode
               article.location = {
-                city: locationResult.primaryLocation.name,
+                location: locationResult.primaryLocation.name || 'Unknown',
+                latitude: 0,
+                longitude: 0,
                 zipCode: defaultZipCode
               };
             }
           } catch (error) {
             // If geocoding fails, use the default zipCode
             article.location = {
-              city: locationResult.primaryLocation.name,
+              location: locationResult.primaryLocation.name || 'Unknown',
+              latitude: 0,
+              longitude: 0,
               zipCode: defaultZipCode
             };
           }
@@ -325,22 +310,26 @@ export class RedditService {
             const geocodedLocation = await this.geocodingService.geocodeLocation(fullContentResult.primaryLocation.name);
             if (geocodedLocation && geocodedLocation.zipCode) {
               article.location = {
-                city: fullContentResult.primaryLocation.name,
-                zipCode: geocodedLocation.zipCode,
-                country: geocodedLocation.country,
-                state: geocodedLocation.state
+                location: fullContentResult.primaryLocation.name || 'Unknown',
+                latitude: geocodedLocation.coordinates.latitude,
+                longitude: geocodedLocation.coordinates.longitude,
+                zipCode: geocodedLocation.zipCode
               };
             } else {
               // If geocoding fails, use the default zipCode
               article.location = {
-                city: fullContentResult.primaryLocation.name,
+                location: fullContentResult.primaryLocation.name || 'Unknown',
+                latitude: 0,
+                longitude: 0,
                 zipCode: defaultZipCode
               };
             }
           } catch (error) {
             // If geocoding fails, use the default zipCode
             article.location = {
-              city: fullContentResult.primaryLocation.name,
+              location: fullContentResult.primaryLocation.name || 'Unknown',
+              latitude: 0,
+              longitude: 0,
               zipCode: defaultZipCode
             };
           }
@@ -351,7 +340,9 @@ export class RedditService {
       // Ensure location is always a structured object with zipCode
       if (typeof article.location === 'string') {
         article.location = {
-          city: article.location,
+          location: article.location,
+          latitude: 0,
+          longitude: 0,
           zipCode: defaultZipCode
         };
       }
@@ -360,7 +351,9 @@ export class RedditService {
     // Final check to ensure location is always a structured object with zipCode
     if (typeof article.location === 'string') {
       article.location = {
-        city: article.location,
+        location: article.location,
+        latitude: 0, // Default coordinates since we couldn't extract any
+        longitude: 0, // Default coordinates since we couldn't extract any
         zipCode: defaultZipCode
       };
     }
@@ -369,108 +362,12 @@ export class RedditService {
   }
 
   /**
-   * Get mock Reddit articles for testing or when API is unavailable
-   * @returns Array of mock articles
+   * Handle case when Reddit API credentials are not available
+   * @returns Empty array of articles
    */
-  private async getMockArticles(): Promise<Article[]> {
-    const mockArticles: Article[] = [
-      {
-        id: 'reddit-mock1',
-        title: 'Breaking News: Major Scientific Discovery at MIT',
-        content: 'Scientists at MIT in Cambridge, Massachusetts have made a groundbreaking discovery that could change our understanding of the universe...',
-        source: 'reddit',
-        sourceUrl: 'https://reddit.com/r/science/mock1',
-        author: 'science_enthusiast',
-        publishedAt: new Date().toISOString(),
-        location: {
-          city: 'Cambridge',
-          state: 'Massachusetts',
-          zipCode: '02139',
-          lat: 42.3736,
-          lng: -71.1097
-        },
-        mass: 120000
-      },
-      {
-        id: 'reddit-mock2',
-        title: 'New Technology Breakthrough Announced by Silicon Valley Startup',
-        content: 'A major tech company in San Francisco, California has announced a revolutionary new product...',
-        source: 'reddit',
-        sourceUrl: 'https://reddit.com/r/technology/mock2',
-        author: 'tech_news',
-        publishedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-        location: {
-          city: 'San Francisco',
-          state: 'California',
-          zipCode: '94103',
-          lat: 37.7749,
-          lng: -122.4194
-        },
-        mass: 180000
-      },
-      {
-        id: 'reddit-mock3',
-        title: 'Global Economic Summit Addresses Climate Change',
-        content: 'World leaders gathered in Geneva to discuss economic policies addressing climate change...',
-        source: 'reddit',
-        sourceUrl: 'https://reddit.com/r/worldnews/mock3',
-        author: 'global_reporter',
-        publishedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-        location: {
-          city: 'Geneva',
-          country: 'Switzerland',
-          zipCode: '1201',
-          lat: 46.2044,
-          lng: 6.1432
-        },
-        mass: 200000
-      }
-    ];
-    
-    // Ensure all mock articles have proper location data with zipCode
-    for (const article of mockArticles) {
-      try {
-        // Ensure each article has a structured location with zipCode
-        if (typeof article.location === 'string') {
-          // Try to geocode the location name to get a zipCode
-          const geocodedLocation = await this.geocodingService.geocodeLocation(article.location);
-          
-          if (geocodedLocation && geocodedLocation.zipCode) {
-            article.location = {
-              city: article.location.split(',')[0]?.trim() || 'Unknown',
-              state: geocodedLocation.state,
-              country: geocodedLocation.country,
-              zipCode: geocodedLocation.zipCode,
-              lat: geocodedLocation.coordinates.latitude,
-              lng: geocodedLocation.coordinates.longitude
-            };
-          } else {
-            // If geocoding fails, use a default zipCode
-            article.location = {
-              city: article.location.split(',')[0]?.trim() || 'Unknown',
-              zipCode: '00000'
-            };
-          }
-        } else if (!article.location || typeof article.location !== 'object') {
-          // Default location if none exists
-          article.location = {
-            city: 'Global',
-            zipCode: '00000'
-          };
-        }
-      } catch (error) {
-        console.warn(`Error processing mock article ${article.id}: ${error}`);
-        // Ensure a valid location object with zipCode
-        if (typeof article.location === 'string' || !article.location) {
-          article.location = {
-            city: typeof article.location === 'string' ? article.location : 'Global',
-            zipCode: '00000'
-          };
-        }
-      }
-    }
-    
-    return mockArticles;
+  private async handleMissingCredentials(): Promise<Article[]> {
+    console.warn('Reddit API credentials not found. No articles will be fetched from Reddit.');
+    return [];
   }
   
   /**

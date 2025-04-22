@@ -31,7 +31,7 @@ describe('ArticleFetcherService', () => {
       sourceUrl: 'https://reddit.com/r/news/123',
       author: 'reddituser',
       publishedAt: new Date().toISOString(),
-      location: { zipCode: '94103', city: 'San Francisco', state: 'CA' },
+      location: { location: 'San Francisco, CA', latitude: 37.7749, longitude: -122.4194, zipCode: '94103' },
       tags: ['news', 'technology'],
       mass: 120000,
       
@@ -47,7 +47,7 @@ describe('ArticleFetcherService', () => {
       sourceUrl: 'https://twitter.com/user/123',
       author: '@twitteruser',
       publishedAt: new Date().toISOString(),
-      location: { zipCode: '20001', city: 'Washington', state: 'DC' },
+      location: { location: 'Washington, DC', latitude: 38.9072, longitude: -77.0369, zipCode: '20001' },
       tags: ['politics', 'news'],
       mass: 100000,
       
@@ -63,7 +63,7 @@ describe('ArticleFetcherService', () => {
       sourceUrl: 'https://www.washingtonpost.com/news/123',
       author: 'Washington Post Author',
       publishedAt: new Date().toISOString(),
-      location: { zipCode: '20001', city: 'Washington', state: 'DC' },
+      location: { location: 'Washington, DC', latitude: 38.9072, longitude: -77.0369, zipCode: '20001' },
       tags: ['politics', 'news'],
       mass: 100000,
       
@@ -270,7 +270,8 @@ describe('ArticleFetcherService', () => {
         isRunning: true,
         isScheduled: true,
         fetchCount: 5,
-        lastFetchAt: expect.any(String) // Since fetchCount > 0, lastFetchAt will be a date string
+        lastFetchAt: null,
+        nextScheduledFetch: null
       });
     });
   });

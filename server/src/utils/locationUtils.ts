@@ -14,14 +14,8 @@ export function getLocationName(location: string | ArticleLocation): string {
     return location;
   }
   
-  // Build location name from structured data
-  const parts: string[] = [];
-  
-  if (location.city) parts.push(location.city);
-  if (location.state) parts.push(location.state);
-  if (location.country) parts.push(location.country);
-  
-  return parts.length > 0 ? parts.join(', ') : 'Unknown';
+  // Return the location field directly
+  return location.location || 'Unknown';
 }
 
 /**
@@ -47,10 +41,13 @@ export function getCoordinates(location: string | ArticleLocation): {lat: number
     return undefined;
   }
   
-  if (location.lat !== undefined && location.lng !== undefined) {
+  // Check for coordinates in the new format (latitude/longitude)
+  // Only return coordinates if they are non-zero
+  if (location.latitude !== undefined && location.longitude !== undefined && 
+      location.latitude !== 0 && location.longitude !== 0) {
     return {
-      lat: location.lat,
-      lng: location.lng
+      lat: location.latitude,
+      lng: location.longitude
     };
   }
   

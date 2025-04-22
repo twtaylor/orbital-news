@@ -31,6 +31,27 @@ export class LocationService {
     // Add more as needed
   ]);
   
+  // US locations for prioritization
+  private usLocations = new Set([
+    'united states', 'usa', 'u.s.', 'u.s.a.', 'america',
+    'alabama', 'alaska', 'arizona', 'arkansas', 'california',
+    'colorado', 'connecticut', 'delaware', 'florida', 'georgia',
+    'hawaii', 'idaho', 'illinois', 'indiana', 'iowa',
+    'kansas', 'kentucky', 'louisiana', 'maine', 'maryland',
+    'massachusetts', 'michigan', 'minnesota', 'mississippi', 'missouri',
+    'montana', 'nebraska', 'nevada', 'new hampshire', 'new jersey',
+    'new mexico', 'new york', 'north carolina', 'north dakota', 'ohio',
+    'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina',
+    'south dakota', 'tennessee', 'texas', 'utah', 'vermont',
+    'virginia', 'washington', 'west virginia', 'wisconsin', 'wyoming',
+    'washington dc', 'washington d.c.', 'd.c.', 'district of columbia',
+    'new york city', 'nyc', 'los angeles', 'la', 'chicago', 'houston',
+    'phoenix', 'philadelphia', 'san antonio', 'san diego', 'dallas',
+    'san jose', 'austin', 'jacksonville', 'fort worth', 'columbus',
+    'san francisco', 'charlotte', 'indianapolis', 'seattle', 'denver',
+    'boston', 'portland', 'las vegas', 'miami', 'atlanta'
+  ]);
+  
   // Geocoding service for location coordinates and distance calculation
   private geocodingService: GeocodingService;
   
@@ -203,24 +224,34 @@ export class LocationService {
       // 1. Number of mentions relative to total
       // 2. Whether it's a known country
       // 3. Length of the name (longer names tend to be more specific)
+      // 4. US location bonus (prioritize US locations)
       const mentionScore = totalMentions > 0 ? mentions / totalMentions : 0;
       const countryBonus = this.countries.has(name) ? 0.1 : 0;
       const lengthScore = Math.min(name.length / 20, 0.2); // Max 0.2 for length
+      const usLocationBonus = this.usLocations.has(name) ? 0.3 : 0; // Significant bonus for US locations
       
       const confidence = Math.min(
-        mentionScore * 0.7 + countryBonus + lengthScore,
+        mentionScore * 0.7 + countryBonus + lengthScore + usLocationBonus,
         1.0
       );
       
       locations.push({
         name: this.capitalizeLocation(name),
         confidence: parseFloat(confidence.toFixed(2)),
-        mentions
+        mentions,
+        isUSLocation: this.usLocations.has(name)
       });
     }
     
-    // Sort by confidence (descending)
-    return locations.sort((a, b) => b.confidence - a.confidence);
+    // Sort by US location first, then by confidence (descending)
+    return locations.sort((a, b) => {
+      // First prioritize US locations
+      if (a.isUSLocation && !b.isUSLocation) return -1;
+      if (!a.isUSLocation && b.isUSLocation) return 1;
+      
+      // Then sort by confidence
+      return b.confidence - a.confidence;
+    });
   }
   
   /**

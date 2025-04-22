@@ -294,9 +294,6 @@ describe('RedditService', () => {
       })
     });
     
-    // Mock the getMockArticles method to return our test articles
-    jest.spyOn(redditService as any, 'getMockArticles').mockResolvedValue(mockArticles);
-    
     // Mock the articleStore.getArticles to return empty array (forcing API fetch)
     mockArticleStore.getArticles.mockResolvedValue([]);
     

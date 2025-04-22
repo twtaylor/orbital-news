@@ -85,7 +85,12 @@ class MockRedditService {
         sourceUrl: 'https://reddit.com/r/science/mock1',
         author: 'science_enthusiast',
         publishedAt: new Date().toISOString(),
-        location: { zipCode: '02142', city: 'Cambridge', state: 'Massachusetts' },
+        location: { 
+          location: 'Cambridge, Massachusetts',
+          latitude: 42.3601,
+          longitude: -71.0942,
+          zipCode: '02142'
+        },
         tags: ['science', 'discovery', 'MIT'],
         mass: 120000
         

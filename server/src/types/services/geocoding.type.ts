@@ -22,6 +22,7 @@ export interface GeocodedLocation {
   state?: string;
   country?: string;
   formattedAddress?: string;
+  isUSLocation?: boolean;
 }
 
 /**

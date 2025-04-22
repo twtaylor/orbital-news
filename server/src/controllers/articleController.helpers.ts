@@ -22,15 +22,48 @@ export async function addTierToArticle(article: Article): Promise<ArticleWithTie
   articleWithTier.tier = 'unknown';
   
   try {
-    // If the article has a location with coordinates or city, calculate the distance
+    // If the article has a location object, calculate the distance
     if (article.location && typeof article.location === 'object') {
-      // Try to use coordinates if available, otherwise use city name
-      if (article.location.coordinates) {
-        // Calculate distance using coordinates directly
-        try {
+      // Use the latitude and longitude directly
+      try {
+        const coordinates = {
+          latitude: article.location.latitude,
+          longitude: article.location.longitude
+        };
+        
+        const distanceResult = await geocodingService.calculateDistance(
+          geocodingService.getUserLocation(),
+          coordinates
+        );
+        
+        if (distanceResult) {
+          // Convert to kilometers and miles
+          const distanceInKm = distanceResult / 1000;
+          const distanceInMiles = distanceInKm * 0.621371;
+          
+          // Add distance information to the article
+          articleWithTier.distance = {
+            meters: distanceResult,
+            kilometers: distanceInKm,
+            miles: distanceInMiles
+          };
+          
+          // Determine the tier based on the distance
+          articleWithTier.tier = geocodingService.determineTierFromDistance(distanceInKm);
+        }
+      } catch (error) {
+        console.warn(`Failed to calculate distance for article ${article.id}:`, error);
+      }
+    } else if (article.location && typeof article.location === 'string') {
+      // If location is a string, geocode it to get coordinates
+      try {
+        const geocodedLocation = await geocodingService.geocodeLocation(article.location);
+          
+        if (geocodedLocation && geocodedLocation.coordinates) {
+          // Calculate distance using the coordinates
           const distanceResult = await geocodingService.calculateDistance(
             geocodingService.getUserLocation(),
-            article.location.coordinates
+            geocodedLocation.coordinates
           );
           
           if (distanceResult) {
@@ -48,43 +81,9 @@ export async function addTierToArticle(article: Article): Promise<ArticleWithTie
             // Determine the tier based on the distance
             articleWithTier.tier = geocodingService.determineTierFromDistance(distanceInKm);
           }
-        } catch (error) {
-          console.warn(`Failed to calculate distance using coordinates for article ${article.id}:`, error);
         }
-      } else if (article.location.city) {
-        // Get the location name
-        const locationName = article.location.city;
-        
-        // Calculate the distance from the user's location
-        try {
-          const geocodedLocation = await geocodingService.geocodeLocation(locationName);
-          
-          if (geocodedLocation && geocodedLocation.coordinates) {
-            // Calculate distance using the coordinates
-            const distanceResult = await geocodingService.calculateDistance(
-              geocodingService.getUserLocation(),
-              geocodedLocation.coordinates
-            );
-            
-            if (distanceResult) {
-              // Convert to kilometers and miles
-              const distanceInKm = distanceResult / 1000;
-              const distanceInMiles = distanceInKm * 0.621371;
-              
-              // Add distance information to the article
-              articleWithTier.distance = {
-                meters: distanceResult,
-                kilometers: distanceInKm,
-                miles: distanceInMiles
-              };
-              
-              // Determine the tier based on the distance
-              articleWithTier.tier = geocodingService.determineTierFromDistance(distanceInKm);
-            }
-          }
-        } catch (error) {
-          console.warn(`Failed to calculate distance using city name for article ${article.id}:`, error);
-        }
+      } catch (error) {
+        console.warn(`Failed to calculate distance using location name for article ${article.id}:`, error);
       }
     }
  

@@ -25,6 +25,7 @@ export class GeocodingService {
   private tierThresholds: TierThresholds;
   private defaultUserLocation: Coordinates;
   private defaultUserZipCode: string = '00000'; // Default ZIP code
+  private isUSPrioritizationEnabled: boolean = true; // Flag to enable/disable US location prioritization
 
   /**
    * Initialize the GeocodingService
@@ -163,7 +164,41 @@ export class GeocodingService {
       const results = await this.geocoder.geocode(locationName);
 
       if (results && results.length > 0) {
+        // If US prioritization is enabled, check if there are any US locations in the results
+        if (this.isUSPrioritizationEnabled && results.length > 1) {
+          // Look for US locations in the results
+          const usResults = results.filter(result => 
+            result.country === 'United States' || 
+            result.country === 'USA' || 
+            result.country === 'US'
+          );
+          
+          // If we found US locations, use the first one
+          if (usResults.length > 0) {
+            console.debug(`Prioritizing US location for: ${locationName}`);
+            const result = usResults[0];
+            
+            return {
+              coordinates: {
+                latitude: result.latitude || 0,
+                longitude: result.longitude || 0
+              },
+              zipCode: result.zipcode,
+              city: result.city,
+              state: result.state,
+              country: result.country,
+              formattedAddress: result.formattedAddress,
+              isUSLocation: true
+            };
+          }
+        }
+        
+        // If no US locations were found or US prioritization is disabled, use the first result
         const result = results[0];
+        const isUSLocation = 
+          result.country === 'United States' || 
+          result.country === 'USA' || 
+          result.country === 'US';
         
         return {
           coordinates: {
@@ -174,7 +209,8 @@ export class GeocodingService {
           city: result.city,
           state: result.state,
           country: result.country,
-          formattedAddress: result.formattedAddress
+          formattedAddress: result.formattedAddress,
+          isUSLocation: isUSLocation
         };
       }
       
@@ -331,7 +367,7 @@ export class GeocodingService {
   
   /**
    * Set the user's location by ZIP code
-   * @param zipCode User's ZIP code
+   * @param zipCode ZIP code to set as user location
    * @returns Promise that resolves when the location is set
    */
   async setUserLocationByZipCode(zipCode: string): Promise<boolean> {
@@ -346,7 +382,9 @@ export class GeocodingService {
             latitude: result.latitude,
             longitude: result.longitude
           };
+          
           this.defaultUserZipCode = zipCode;
+          console.log(`User location set to ${result.formattedAddress} by ZIP code ${zipCode}`);
           return true;
         }
       }
@@ -356,5 +394,14 @@ export class GeocodingService {
       console.error('Error setting user location by ZIP code:', error);
       return false;
     }
+  }
+  
+  /**
+   * Enable or disable US location prioritization
+   * @param enabled Whether to enable US location prioritization
+   */
+  setUSPrioritization(enabled: boolean): void {
+    this.isUSPrioritizationEnabled = enabled;
+    console.log(`US location prioritization ${enabled ? 'enabled' : 'disabled'}`);
   }
 }

@@ -28,16 +28,13 @@ export interface Distance {
  * Location interface for structured location data
  */
 export interface ArticleLocation {
-  city?: string;
-  state?: string;
-  country?: string;
+  // Primary location name from NLP extraction
+  location: string;
+  // Mandatory coordinates
+  latitude: number;
+  longitude: number;
+  // Optional fields
   zipCode?: string;
-  // New coordinate structure
-  coordinates?: Coordinates;
-  formattedAddress?: string;
-  // Legacy coordinate properties (for backward compatibility)
-  lat?: number;
-  lng?: number;
 }
 
 /**
