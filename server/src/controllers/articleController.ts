@@ -2,14 +2,14 @@ import { Request, Response } from 'express';
 import ArticleStore from '../services/articleStore';
 import { articleFetcher } from '../services/articleFetcherService';
 import { GeocodingService } from '../services/geocodingService';
-import { Article, ArticleWithTier, TierType } from '../types/models/article.type';
+import { addTierToArticle } from './articleController.helpers';
 
-// Initialize the article store and geocoding service
+// Initialize services
 const articleStore = new ArticleStore();
 const geocodingService = new GeocodingService();
 
 /**
- * Get all articles
+ * Get all articles with tier information based on user location
  * @route GET /api/articles
  */
 export const getArticles = async (req: Request, res: Response): Promise<void> => {
@@ -20,7 +20,7 @@ export const getArticles = async (req: Request, res: Response): Promise<void> =>
     const daysBack = req.query.daysBack ? parseInt(req.query.daysBack as string) : 7; // Default to 7 days
     const userZipCode = req.query.userZipCode as string; // User's zip code for distance calculation
     
-    // Fetch articles from the database
+    // Fetch articles from the database only - no fetching from external APIs
     const articles = await articleStore.getArticles({
       source,
       location,
@@ -28,21 +28,22 @@ export const getArticles = async (req: Request, res: Response): Promise<void> =>
       daysBack
     });
     
-    // If no articles found, trigger a fetch
-    if (articles.length === 0) {
-      console.log('No articles found in database, triggering fetch');
-      // Don't await this to avoid blocking the response
-      articleFetcher.fetchAndStoreArticles();
-    }
+    // Log article count for monitoring
+    console.log(`Retrieved ${articles.length} articles from database`);
     
     // Add tier information to articles for API response
     // If user provided a zip code, set it in the geocoding service
     if (userZipCode) {
       await geocodingService.setUserLocationByZipCode(userZipCode);
+      console.log(`User location set to ZIP code: ${userZipCode}`);
     }
     
+    console.log('Calculating article tiers based on user location...');
     const articlesWithTierPromises = articles.map(article => addTierToArticle(article));
     const articlesWithTier = await Promise.all(articlesWithTierPromises);
+    
+    // Log the number of articles retrieved
+    console.log(`Retrieved and processed ${articlesWithTier.length} articles with tier information`);
     
     res.status(200).json({
       status: 'success',
@@ -52,10 +53,11 @@ export const getArticles = async (req: Request, res: Response): Promise<void> =>
       }
     });
   } catch (error) {
-    console.error('Error in getArticles:', error);
+    console.error('Error fetching articles:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to fetch articles'
+      message: 'Failed to fetch articles',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
@@ -108,8 +110,6 @@ export const getArticleById = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// markArticleAsRead controller method removed as we no longer track read status
-
 /**
  * Get article fetcher status
  * @route GET /api/articles/fetcher/status
@@ -123,108 +123,47 @@ export const getArticleFetcherStatus = async (req: Request, res: Response): Prom
       data: status
     });
   } catch (error) {
-    console.error('Error in getArticleFetcherStatus:', error);
+    console.error('Error getting article fetcher status:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to get article fetcher status'
+      message: 'Failed to get article fetcher status',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
 
 /**
- * Trigger article fetch manually
+ * Trigger an article fetch manually
  * @route POST /api/articles/fetcher/fetch
  */
-/**
- * Add tier information to an article for API responses
- * This calculates the tier dynamically based on the article's properties
- * @param article The article to add tier to
- * @returns Promise with Article with tier information
- */
-const addTierToArticle = async (article: Article): Promise<ArticleWithTier> => {
-  let tier: TierType = 'medium'; // Default tier
-  
-  try {
-    // Calculate tier based on location if possible
-    if (typeof article.location === 'object' && article.location.zipCode) {
-      // If we have coordinates, use distance-based tier calculation
-      if (article.location.lat && article.location.lng) {
-        const userLocation = geocodingService.getUserLocation();
-        const distance = geocodingService.calculateDistance(
-          userLocation,
-          { latitude: article.location.lat, longitude: article.location.lng }
-        );
-        
-        // Convert to kilometers
-        const distanceInKm = distance / 1000;
-        tier = geocodingService.determineTierFromDistance(distanceInKm);
-      } else if (article.location.zipCode) {
-        // Try to calculate tier based on zipCode
-        try {
-          // If we have a zip code, use it directly
-          const distanceResult = await geocodingService.calculateDistanceBetweenZipCodes(
-            geocodingService.getDefaultUserZipCode(),
-            article.location.zipCode
-          );
-          
-          if (distanceResult && distanceResult.tier) {
-            tier = distanceResult.tier;
-          }
-        } catch (error) {
-          console.warn(`Failed to calculate tier for article ${article.id}: ${error}`);
-          // Fall back to mass-based tier calculation
-          tier = calculateTierFromMass(article.mass);
-        }
-      }
-    } else {
-      // Fall back to mass-based tier calculation
-      tier = calculateTierFromMass(article.mass);
-    }
-  } catch (error) {
-    console.warn(`Error calculating tier for article ${article.id}: ${error}`);
-    // Fall back to mass-based tier calculation
-    tier = calculateTierFromMass(article.mass);
-  }
-  
-  // Return the article with tier information
-  return {
-    ...article,
-    tier
-  };
-};
-
-/**
- * Calculate tier based on article mass
- * @param mass Article mass
- * @returns Tier type
- */
-const calculateTierFromMass = (mass: number): TierType => {
-  if (mass > 200000) {
-    return 'close';
-  } else if (mass > 100000) {
-    return 'medium';
-  } else {
-    return 'far';
-  }
-};
-
 export const triggerArticleFetch = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Trigger article fetch in the background
-    articleFetcher.fetchAndStoreArticles()
-      .then(() => console.log('Manual article fetch completed'))
-      .catch(err => console.error('Error during manual article fetch:', err));
+    // Check if a fetch is already in progress
+    const status = articleFetcher.getStatus() as any;
     
-    res.status(202).json({
+    if (status.isRunning) {
+      res.status(409).json({
+        status: 'conflict',
+        message: 'Article fetch already in progress',
+        data: status
+      });
+      return;
+    }
+    
+    // Start the article fetch in the background using the worker thread
+    articleFetcher.fetchAndStoreArticles();
+    
+    res.status(200).json({
       status: 'success',
-      message: 'Article fetch triggered',
+      message: 'Article fetch triggered in worker thread',
       data: articleFetcher.getStatus()
     });
   } catch (error) {
-    console.error('Error in triggerArticleFetch:', error);
+    console.error('Error triggering article fetch:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to trigger article fetch'
+      message: 'Failed to trigger article fetch',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };

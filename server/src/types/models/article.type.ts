@@ -5,7 +5,24 @@
 /**
  * Valid orbital tier types for articles
  */
-export type TierType = 'close' | 'medium' | 'far';
+export type TierType = 'close' | 'medium' | 'far' | 'unknown';
+
+/**
+ * Coordinates interface for geographic coordinates
+ */
+export interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
+
+/**
+ * Distance information for articles
+ */
+export interface Distance {
+  meters: number;
+  kilometers: number;
+  miles: number;
+}
 
 /**
  * Location interface for structured location data
@@ -14,7 +31,11 @@ export interface ArticleLocation {
   city?: string;
   state?: string;
   country?: string;
-  zipCode: string; // Now required
+  zipCode?: string;
+  // New coordinate structure
+  coordinates?: Coordinates;
+  formattedAddress?: string;
+  // Legacy coordinate properties (for backward compatibility)
   lat?: number;
   lng?: number;
 }
@@ -41,5 +62,6 @@ export interface Article {
  * This is used for API responses but not for database storage
  */
 export interface ArticleWithTier extends Article {
-  tier: TierType; // Orbital tier (close, medium, far) - calculated dynamically
+  tier: TierType; // Orbital tier (close, medium, far, unknown) - calculated dynamically
+  distance?: Distance; // Distance information if available
 }
