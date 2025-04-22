@@ -10,6 +10,7 @@
     "mongo:start": "node scripts/start-mongo.js",
     "mongo:status": "node scripts/mongo-status.js",
     "build": "tsc",
+    "postbuild": "mkdir -p dist/data && cp -r src/data/* dist/data/",
     "build:prod": "NODE_ENV=production pnpm clean && tsc",
     "clean": "rm -rf dist",
     "rebuild": "pnpm clean && pnpm build",

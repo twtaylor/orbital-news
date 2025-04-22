@@ -271,5 +271,212 @@
     "createdAt": "2025-04-22T05:24:25.900+0000",
     "updatedAt": "2025-04-22T09:00:00.644+0000",
     "__v": 0
+  },
+  {
+    "_id" : "6807e0f29aa2cc4e95217321",
+    "articleId" : "reddit-1k4kgnl",
+    "title" : "Passengers on Delta flight evacuate on slides after engine fire at Orlando airport",
+    "source" : "reddit",
+    "sourceUrl" : "https://www.nbcnews.com/news/us-news/passengers-delta-flight-evacuate-slides-engine-fire-orlando-airport-rcna202183",
+    "author" : "NeilPoonHandler",
+    "publishedAt" : "2025-04-21T18:17:07.000Z",
+    "location" : {
+        "location" : "La",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T18:33:22.240+0000",
+    "createdAt" : "2025-04-22T18:33:22.205+0000",
+    "updatedAt" : "2025-04-22T18:33:22.240+0000",
+    "__v" : 0
+  },
+  {
+    "_id" : "6807e0f29aa2cc4e9521731b",
+    "articleId" : "reddit-1k4kclu",
+    "title" : "Pakistan expels 80,000 Afghans in two weeks amid crackdown on undocumented migrants",
+    "source" : "reddit",
+    "sourceUrl" : "https://www.abc.net.au/news/2025-04-19/pakistan-expels-afghans-amid-crackdown-on-undocumented-migrants/105193418",
+    "author" : "AudibleNod",
+    "publishedAt" : "2025-04-21T18:12:44.000Z",
+    "location" : {
+        "location" : "Pakistan",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T18:33:22.237+0000",
+    "createdAt" : "2025-04-22T18:33:22.201+0000",
+    "updatedAt" : "2025-04-22T18:33:22.237+0000",
+    "__v" : 0
+  },
+  {
+    "_id" : "6807e0f29aa2cc4e95217318",
+    "articleId" : "reddit-1k4wc1t",
+    "title" : "US FTC sues Uber, alleging deceptive subscription practices",
+    "source" : "reddit",
+    "sourceUrl" : "https://www.bbc.com/news/articles/c1drkq0dy07o",
+    "author" : "steffxoxoxoo",
+    "publishedAt" : "2025-04-22T03:08:47.000Z",
+    "location" : {
+        "location" : "America",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T18:33:22.235+0000",
+    "createdAt" : "2025-04-22T18:33:22.198+0000",
+    "updatedAt" : "2025-04-22T18:33:22.235+0000",
+    "__v" : 0
+  },
+  {
+    "_id" : "6807e0f29aa2cc4e95217315",
+    "articleId" : "reddit-1k4norc",
+    "title" : "Nadine Menendez found guilty in bribery trial",
+    "source" : "reddit",
+    "sourceUrl" : "https://www.nbcnewyork.com/news/local/crime-and-courts/verdict-nadine-menendez-bribery-trial-jury/6232296/",
+    "author" : "StupendousMan1995",
+    "publishedAt" : "2025-04-21T20:26:12.000Z",
+    "location" : {
+        "location" : "New Jersey",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T18:33:22.233+0000",
+    "createdAt" : "2025-04-22T18:33:22.196+0000",
+    "updatedAt" : "2025-04-22T18:33:22.233+0000",
+    "__v" : 0
+  },
+  {
+    "_id" : "6807e0f19aa2cc4e952172fe",
+    "articleId" : "reddit-1k5171z",
+    "title" : "Walgreens to pay up to $350 million in US opioid settlement",
+    "source" : "reddit",
+    "sourceUrl" : "https://edition.cnn.com/2025/04/22/business/walgreens-opioid-settlement-hnk/index.html",
+    "author" : "p_pio",
+    "publishedAt" : "2025-04-22T08:20:40.000Z",
+    "location" : {
+        "location" : "Chicago, Illinois",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T18:58:10.191+0000",
+    "createdAt" : "2025-04-22T18:33:21.789+0000",
+    "updatedAt" : "2025-04-22T18:58:10.191+0000",
+    "__v" : 0
+  },
+  {
+    "_id" : "6807e0f19aa2cc4e952172f5",
+    "articleId" : "reddit-1k59llu",
+    "title" : "US FDA suspends milk quality tests amid workforce cuts",
+    "source" : "reddit",
+    "sourceUrl" : "https://www.reuters.com/business/healthcare-pharmaceuticals/us-fda-suspends-milk-quality-tests-amid-workforce-cuts-2025-04-21/",
+    "author" : "wei-long",
+    "publishedAt" : "2025-04-22T15:46:27.000Z",
+    "location" : {
+        "location" : "Soft paywall",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T18:58:10.191+0000",
+    "createdAt" : "2025-04-22T18:33:21.789+0000",
+    "updatedAt" : "2025-04-22T18:58:10.191+0000",
+    "__v" : 0
+  },
+  {
+    "_id" : "6807e0f19aa2cc4e952172f5",
+    "articleId" : "reddit-1k59llu",
+    "title" : "US FDA suspends milk quality tests amid workforce cuts",
+    "source" : "reddit",
+    "sourceUrl" : "https://www.reuters.com/business/healthcare-pharmaceuticals/us-fda-suspends-milk-quality-tests-amid-workforce-cuts-2025-04-21/",
+    "author" : "wei-long",
+    "publishedAt" : "2025-04-22T15:46:27.000Z",
+    "location" : {
+        "location" : "Soft paywall",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T21:09:32.762+0000",
+    "createdAt" : "2025-04-22T18:33:21.779+0000",
+    "updatedAt" : "2025-04-22T21:09:32.762+0000",
+    "__v" : 0
+  },
+  {
+    "_id" : "6807e0f19aa2cc4e952172e9",
+    "articleId" : "reddit-1k4p3ey",
+    "title" : "Student loans in default to be referred to debt collection, Education Department says",
+    "source" : "reddit",
+    "sourceUrl" : "https://apnews.com/article/student-loan-debt-default-collection-fa6498bf519e0d50f2cd80166faef32a",
+    "author" : "stubborn_facts",
+    "publishedAt" : "2025-04-21T21:24:03.000Z",
+    "location" : {
+        "location" : "Florida",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T21:09:32.759+0000",
+    "createdAt" : "2025-04-22T18:33:21.764+0000",
+    "updatedAt" : "2025-04-22T21:09:32.759+0000",
+    "__v" : 0
+  },
+  {
+    "_id" : "6807e0f19aa2cc4e952172e6",
+    "articleId" : "reddit-1k571mo",
+    "title" : "Info Pete Hegseth shared with wife, brother came from top general's secure messages",
+    "source" : "reddit",
+    "sourceUrl" : "https://www.nbcnews.com/politics/national-security/info-hegseths-yemen-signal-texts-came-generals-secure-messages-rcna198838",
+    "author" : "rapidcreek409",
+    "publishedAt" : "2025-04-22T14:01:09.000Z",
+    "location" : {
+        "location" : "Washington, District of Columbia",
+        "latitude" : 0,
+        "longitude" : 0,
+        "zipCode" : "00000"
+    },
+    "tags" : [
+
+    ],
+    "mass" : 500000,
+    "fetchedAt" : "2025-04-22T21:09:32.745+0000",
+    "createdAt" : "2025-04-22T18:33:21.759+0000",
+    "updatedAt" : "2025-04-22T21:09:32.747+0000",
+    "__v" : 0
   }
 ]

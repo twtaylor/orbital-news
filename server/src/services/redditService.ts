@@ -239,19 +239,24 @@ export class RedditService {
       // to avoid issues with paywalled sites
       const locationResult = await this.locationService.extractLocations(article, {
         fetchFullContent: false, // Don't fetch full content by default to avoid paywall issues
-        minConfidence: 0.4 // Require reasonable confidence
+        minConfidence: 0.4, // Require reasonable confidence
+        includeGeoData: true // Ensure geocoding is performed
       });
 
+      console.debug(`Article ${article.id}: Extracted primary location: ${locationResult.primaryLocation?.name || 'None'}`);
+      
       // Set the location if we found one with reasonable confidence
       if (locationResult.primaryLocation && locationResult.primaryLocation.confidence >= 0.4) {
         // Check if we have detailed location data (from geocoding)
         if (locationResult.primaryLocation.latitude && locationResult.primaryLocation.longitude) {
+          console.debug(`Article ${article.id}: Using geocoded data from LocationService: ${locationResult.primaryLocation.name} (${locationResult.primaryLocation.latitude}, ${locationResult.primaryLocation.longitude}, ${locationResult.primaryLocation.zipCode})`);
+          
           // Create structured location object with required zipCode
           const structuredLocation: ArticleLocation = {
             location: locationResult.primaryLocation.name || 'Unknown',
             latitude: locationResult.primaryLocation.latitude,
             longitude: locationResult.primaryLocation.longitude,
-            zipCode: locationResult.primaryLocation.zipCode
+            zipCode: locationResult.primaryLocation.zipCode || defaultZipCode
           };
           
           // Set the structured location
@@ -260,8 +265,12 @@ export class RedditService {
           // For simple string locations, we need to create a structured object with zipCode
           // Try to geocode the location name to get a zipCode
           try {
+            console.debug(`Article ${article.id}: Attempting to geocode location: ${locationResult.primaryLocation.name}`);
             const geocodedLocation = await this.geocodingService.geocodeLocation(locationResult.primaryLocation.name);
+            
             if (geocodedLocation && geocodedLocation.zipCode) {
+              console.debug(`Article ${article.id}: Successfully geocoded to: ${geocodedLocation.zipCode} (${geocodedLocation.coordinates.latitude}, ${geocodedLocation.coordinates.longitude})`);
+              
               article.location = {
                 location: locationResult.primaryLocation.name || 'Unknown',
                 latitude: geocodedLocation.coordinates.latitude,
@@ -270,6 +279,7 @@ export class RedditService {
               };
             } else {
               // If geocoding fails, use the default zipCode
+              console.debug(`Article ${article.id}: Geocoding failed - no valid result returned`);
               article.location = {
                 location: locationResult.primaryLocation.name || 'Unknown',
                 latitude: 0,
@@ -279,12 +289,38 @@ export class RedditService {
             }
           } catch (error) {
             // If geocoding fails, use the default zipCode
+            console.error(`Article ${article.id}: Geocoding error:`, error);
             article.location = {
               location: locationResult.primaryLocation.name || 'Unknown',
               latitude: 0,
               longitude: 0,
               zipCode: defaultZipCode
             };
+          }
+        }
+      } else {
+        // If no primary location with good confidence was found, check if the article's location
+        // is a US state or major city that we can geocode directly
+        const currentLocation = typeof article.location === 'object' ? 
+          (article.location as { location: string }).location : 'Unknown';
+        
+        if (currentLocation && currentLocation !== 'Unknown') {
+          try {
+            console.debug(`Article ${article.id}: No primary location found, trying to geocode original location: ${currentLocation}`);
+            const fallbackGeocode = await this.geocodingService.geocodeLocation(currentLocation);
+            
+            if (fallbackGeocode && fallbackGeocode.coordinates.latitude && fallbackGeocode.coordinates.longitude) {
+              console.debug(`Article ${article.id}: Successfully geocoded original location to: ${fallbackGeocode.zipCode || defaultZipCode} (${fallbackGeocode.coordinates.latitude}, ${fallbackGeocode.coordinates.longitude})`);
+              
+              article.location = {
+                location: currentLocation,
+                latitude: fallbackGeocode.coordinates.latitude,
+                longitude: fallbackGeocode.coordinates.longitude,
+                zipCode: fallbackGeocode.zipCode || defaultZipCode
+              };
+            }
+          } catch (error) {
+            console.error(`Article ${article.id}: Fallback geocoding error:`, error);
           }
         }
       }
