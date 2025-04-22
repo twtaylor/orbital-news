@@ -43,9 +43,14 @@ npm install -g pnpm
 
 2. Set up environment variables:
    ```
-   cp server/.env.example .env
+   cp .env.example .env
    ```
-   Then edit the `.env` file with your configuration.
+   Then edit the `.env` file with your configuration. Make sure to set the following required variables:
+   
+   - `GEOCODING_PROVIDER`: The geocoding service provider (e.g., 'opencage')
+   - `GEOCODING_API_KEY`: Your API key for the geocoding service
+   
+   You can get a free API key from [OpenCage](https://opencagedata.com/) or use another supported provider.
 
 3. Start the development server:
    ```

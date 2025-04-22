@@ -7,6 +7,7 @@
 
 import NodeGeocoder from 'node-geocoder';
 import * as geolib from 'geolib';
+import * as dotenv from 'dotenv';
 import { 
   Coordinates,
   GeocodedLocation, 
@@ -16,8 +17,11 @@ import {
 } from '../types/services/geocoding.type';
 import { TierType } from '../types/models/article.type';
 
+// Load environment variables
+dotenv.config();
+
 export class GeocodingService {
-  private geocoder: NodeGeocoder.Geocoder;
+  private geocoder!: NodeGeocoder.Geocoder; // Using the definite assignment assertion
   private tierThresholds: TierThresholds;
   private defaultUserLocation: Coordinates;
   private defaultUserZipCode: string = '00000'; // Default ZIP code
@@ -33,24 +37,115 @@ export class GeocodingService {
     tierThresholds: TierThresholds = { close: 240, medium: 1600 }, // 0-150 miles, 151-1000 miles, >1000 miles
     defaultUserLocation: Coordinates = { latitude: 35.4676, longitude: -97.5164 } // Oklahoma City (central US)
   ) {
-    // Default to OpenStreetMap if no provider specified (doesn't require API key)
+    // Set up the tierThresholds and defaultUserLocation
+    this.tierThresholds = tierThresholds;
+    this.defaultUserLocation = defaultUserLocation;
+    
+    // Check if we're in a test environment
+    const isTestEnvironment = process.env.NODE_ENV === 'test';
+    
+    if (isTestEnvironment) {
+      // In test environment, use a mock geocoder
+      this.setupMockGeocoder();
+      return;
+    }
+    
+    // In non-test environments, use real geocoder with API key
+    
+    // Get provider and API key from environment variables
+    const provider = process.env.GEOCODING_PROVIDER || options.provider;
+    const apiKey = process.env.GEOCODING_API_KEY || options.apiKey;
+    
+    // Validate that we have the required geocoding configuration
+    if (!provider || !apiKey) {
+      const missingVars = [];
+      if (!provider) missingVars.push('GEOCODING_PROVIDER');
+      if (!apiKey) missingVars.push('GEOCODING_API_KEY');
+      
+      const errorMessage = `Missing required geocoding configuration: ${missingVars.join(', ')}. Please set these in your .env file or environment variables.`;
+      console.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+    
+    // Configure the geocoder with the provider and API key
     const geocoderOptions: NodeGeocoder.Options = {
-      provider: 'openstreetmap',
+      provider,
       httpAdapter: options.httpAdapter || 'https',
-      apiKey: options.apiKey,
+      apiKey,
       formatter: null,
-      fetch: (url: string, opts: any) =>
-        fetch(url, {
-          ...opts,
-          headers: {
-            'User-Agent': 'MyGeocodingApp <me@twtaylor.org>',   
-          },
-        }),
     } as unknown as NodeGeocoder.Options;
 
     this.geocoder = NodeGeocoder(geocoderOptions);
-    this.tierThresholds = tierThresholds;
-    this.defaultUserLocation = defaultUserLocation;
+    console.log(`Geocoding service initialized with provider: ${provider}`);
+  }
+  
+  /**
+   * Set up a mock geocoder for testing
+   * This avoids making real API calls during tests
+   */
+  private setupMockGeocoder(): void {
+    // Create a mock geocoder that returns predictable results
+    this.geocoder = {
+      geocode: async (query: string) => {
+        // Return mock data based on the query
+        if (query.toLowerCase().includes('new york')) {
+          return [{
+            latitude: 40.7128,
+            longitude: -74.0060,
+            country: 'United States',
+            state: 'New York',
+            city: 'New York City',
+            zipcode: '10001',
+            formattedAddress: 'New York City, NY, USA'
+          }];
+        } else if (query.toLowerCase().includes('san francisco')) {
+          return [{
+            latitude: 37.7749,
+            longitude: -122.4194,
+            country: 'United States',
+            state: 'California',
+            city: 'San Francisco',
+            zipcode: '94103',
+            formattedAddress: 'San Francisco, CA, USA'
+          }];
+        } else if (query.toLowerCase().includes('london')) {
+          return [{
+            latitude: 51.5074,
+            longitude: -0.1278,
+            country: 'United Kingdom',
+            state: 'England',
+            city: 'London',
+            zipcode: 'SW1A 1AA',
+            formattedAddress: 'London, UK'
+          }];
+        }
+        
+        // Default mock response for any other query
+        return [{
+          latitude: 35.4676,
+          longitude: -97.5164,
+          country: 'United States',
+          state: 'Oklahoma',
+          city: 'Oklahoma City',
+          zipcode: '73102',
+          formattedAddress: 'Oklahoma City, OK, USA'
+        }];
+      },
+      reverse: async () => {
+        // Mock reverse geocoding (not used in most tests)
+        return [{
+          latitude: 35.4676,
+          longitude: -97.5164,
+          country: 'United States',
+          state: 'Oklahoma',
+          city: 'Oklahoma City',
+          zipcode: '73102',
+          formattedAddress: 'Oklahoma City, OK, USA'
+        }];
+      }
+    } as unknown as NodeGeocoder.Geocoder;
+    
+    console.log('Geocoding service initialized with mock geocoder for testing');
   }
 
   /**

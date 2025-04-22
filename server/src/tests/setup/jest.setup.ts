@@ -14,6 +14,10 @@ dotenv.config();
 process.env.NODE_ENV = 'test';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/orbital_news_test';
 
+// Mock geocoding environment variables for tests
+process.env.GEOCODING_PROVIDER = 'test_provider';
+process.env.GEOCODING_API_KEY = 'test_api_key';
+
 // Mock mongoose module
 jest.mock('mongoose', () => mongooseMock);
 
