@@ -88,7 +88,7 @@ export async function addTierToArticle(article: Article): Promise<ArticleWithTie
     }
  
     // If we can't calculate the tier, set it to medium
-    if (articleWithTier.tier === 'unknown') {
+    if (articleWithTier.tier === 'unknown' || !articleWithTier.tier) {
       articleWithTier.tier = 'medium';
     }
     

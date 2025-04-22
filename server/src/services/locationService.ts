@@ -8,12 +8,16 @@ import {
 } from '../types/services/location.type';
 import { GeocodingService } from './geocodingService';
 import { Coordinates } from '../types/services/geocoding.type';
+import { USLocationService } from './usLocationService';
 
 /**
  * Service for extracting location information from article content
  * and determining article tiers based on geographic distance
  */
 export class LocationService {
+  // US Location service for improved location validation
+  private _usLocationService: USLocationService;
+  
   // Common location words to exclude (lowercase)
   private excludedTerms = new Set([
     'here', 'there', 'everywhere', 'nowhere', 'somewhere',
@@ -63,6 +67,7 @@ export class LocationService {
   constructor(userLocation?: Coordinates, userZipCode?: string) {
     // Initialize geocoding service with default settings
     this.geocodingService = new GeocodingService();
+    this._usLocationService = new USLocationService();
     
     // Set user location if provided
     if (userLocation) {
@@ -113,35 +118,63 @@ export class LocationService {
     }
     
     // Extract locations from text
-    const locations = this.extractLocationsFromText(textToAnalyze);
+    const locations = this.extractLocationsFromText(textToAnalyze, article.title);
 
     // Filter by confidence and limit number
     const filteredLocations = locations
       .filter(loc => loc.confidence >= minConfidence)
       .slice(0, maxLocations);
     
-    // Find primary location (highest confidence)
-    const primaryLocation = filteredLocations.length > 0 
-      ? filteredLocations[0] 
-      : undefined;
+    // Find primary location (prioritizing cities over countries)
+    let primaryLocation: Location | undefined;
+    
+    if (filteredLocations.length > 0) {
+      // First, try to find a city
+      primaryLocation = filteredLocations.find(loc => 
+        loc.city && loc.city.length > 0 && 
+        // Avoid selecting countries as cities
+        !this.countries.has(loc.city.toLowerCase())
+      );
+      
+      // If no city found, use the highest confidence location
+      if (!primaryLocation) {
+        primaryLocation = filteredLocations[0];
+      }
+    }
     
     // Add geo data if requested
-    if (includeGeoData && filteredLocations.length > 0) {
-      // Geocode the primary location to get coordinates and zip code
-      try {
-        const geocodedLocation = await this.geocodingService.geocodeLocation(primaryLocation?.name || '');
-        
-        if (geocodedLocation && primaryLocation) {
-          // Add geocoded data to the primary location
-          primaryLocation.latitude = geocodedLocation.coordinates.latitude;
-          primaryLocation.longitude = geocodedLocation.coordinates.longitude;
-          primaryLocation.zipCode = geocodedLocation.zipCode;
-          primaryLocation.city = geocodedLocation.city || primaryLocation.city;
-          primaryLocation.country = geocodedLocation.country || primaryLocation.country;
-          primaryLocation.region = geocodedLocation.state || primaryLocation.region;
+    if (includeGeoData && filteredLocations.length > 0 && primaryLocation) {
+      // If we already have coordinates from US location service, use those
+      if (!primaryLocation.latitude || !primaryLocation.longitude) {
+        try {
+          // Try to geocode the primary location
+          const geocodedLocation = await this.geocodingService.geocodeLocation(primaryLocation.name || '');
+          
+          if (geocodedLocation) {
+            // Add geocoded data to the primary location
+            primaryLocation.latitude = geocodedLocation.coordinates.latitude;
+            primaryLocation.longitude = geocodedLocation.coordinates.longitude;
+            primaryLocation.zipCode = geocodedLocation.zipCode;
+            primaryLocation.city = geocodedLocation.city || primaryLocation.city;
+            primaryLocation.country = geocodedLocation.country || primaryLocation.country;
+            primaryLocation.region = geocodedLocation.state || primaryLocation.region;
+          } else if (primaryLocation.isUSLocation) {
+            // Fallback for US locations - use approximate coordinates
+            const usState = this._usLocationService.validateLocation(primaryLocation.name);
+            if (usState) {
+              primaryLocation.latitude = usState.latitude;
+              primaryLocation.longitude = usState.longitude;
+              primaryLocation.zipCode = usState.zipCodes ? usState.zipCodes[0] : '00000';
+            } else {
+              // Generic US coordinates (center of US)
+              primaryLocation.latitude = 39.8283;
+              primaryLocation.longitude = -98.5795;
+              primaryLocation.zipCode = '00000';
+            }
+          }
+        } catch (error) {
+          console.warn('Error geocoding primary location:', error);
         }
-      } catch (error) {
-        console.warn('Error geocoding primary location:', error);
       }
     }
     
@@ -149,23 +182,18 @@ export class LocationService {
     let distanceResult = undefined;
     let tier = undefined;
     
-    if (primaryLocation && primaryLocation.name) {
-      try {
-        // Use the geocoding service to calculate distance from user location
-        const geoResult = await this.geocodingService.calculateDistanceFromUser(primaryLocation.name);
+    if (primaryLocation && primaryLocation.latitude && primaryLocation.longitude) {
+      const userCoordinates = this.geocodingService.getUserCoordinates();
+      
+      if (userCoordinates) {
+        // Calculate distance to user location
+        distanceResult = this.calculateDistance(
+          { latitude: primaryLocation.latitude, longitude: primaryLocation.longitude },
+          userCoordinates
+        );
         
-        if (geoResult) {
-          distanceResult = {
-            distanceInMeters: geoResult.distanceInMeters,
-            distanceInKilometers: geoResult.distanceInKilometers,
-            distanceInMiles: geoResult.distanceInMiles
-          };
-          
-          tier = geoResult.tier;
-          // No special logging
-        }
-      } catch (error) {
-        console.error('Error calculating distance for location:', error);
+        // Determine tier based on distance
+        tier = this.determineTier(distanceResult.distanceInMiles);
       }
     }
     
@@ -181,12 +209,66 @@ export class LocationService {
   }
   
   /**
+   * Calculate distance between two coordinates
+   * @param from Starting coordinates
+   * @param to Ending coordinates
+   * @returns Distance in miles
+   */
+  calculateDistance(from: Coordinates, to: Coordinates): { distanceInMeters: number; distanceInKilometers: number; distanceInMiles: number } {
+    // Haversine formula to calculate distance between two points on Earth
+    const R = 3958.8; // Earth's radius in miles
+    const dLat = this._toRadians(to.latitude - from.latitude);
+    const dLon = this._toRadians(to.longitude - from.longitude);
+    
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this._toRadians(from.latitude)) * Math.cos(this._toRadians(to.latitude)) * 
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distanceInMiles = R * c;
+    const distanceInKilometers = distanceInMiles * 1.60934;
+    const distanceInMeters = distanceInKilometers * 1000;
+    
+    return { 
+      distanceInMeters,
+      distanceInKilometers,
+      distanceInMiles
+    };
+  }
+  
+  /**
+   * Convert degrees to radians
+   * @param degrees Angle in degrees
+   * @returns Angle in radians
+   */
+  private _toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
+  }
+  
+  /**
+   * Determine tier based on distance
+   * @param distance Distance in miles
+   * @returns Tier (local, regional, national)
+   */
+  determineTier(distance: number): string {
+    if (distance < 50) {
+      return 'local';
+    } else if (distance < 500) {
+      return 'regional';
+    } else {
+      return 'national';
+    }
+  }
+  
+  /**
    * Extract locations from text using compromise.js
    * 
    * @param text Text to analyze
+   * @param title Optional title for prioritization
    * @returns Array of locations with confidence scores
    */
-  private extractLocationsFromText(text: string): Location[] {
+  private extractLocationsFromText(text: string, title?: string): Location[] {
     // Skip empty text
     if (!text || text.trim().length === 0) {
       return [];
@@ -199,7 +281,20 @@ export class LocationService {
     const places = doc.places();
     const locationMentions = new Map<string, number>();
 
-    // No special logging
+    // If we have a title, extract locations from it separately and give them more weight
+    if (title) {
+      const titleDoc = nlp(title);
+      const titlePlaces = titleDoc.places();
+      
+      titlePlaces.forEach(place => {
+        const name = place.text().toLowerCase();
+        if (!this.excludedTerms.has(name)) {
+          // Add extra weight to title mentions (equivalent to multiple body mentions)
+          const count = locationMentions.get(name) || 0;
+          locationMentions.set(name, count + 3); // Title locations get 3x the weight
+        }
+      });
+    }
     
     // Count mentions of each location
     places.forEach(place => {
@@ -220,27 +315,38 @@ export class LocationService {
     const totalMentions = Array.from(locationMentions.values()).reduce((sum, count) => sum + count, 0);
     
     for (const [name, mentions] of locationMentions.entries()) {
-      // Calculate confidence based on:
-      // 1. Number of mentions relative to total
-      // 2. Whether it's a known country
-      // 3. Length of the name (longer names tend to be more specific)
-      // 4. US location bonus (prioritize US locations)
-      const mentionScore = totalMentions > 0 ? mentions / totalMentions : 0;
-      const countryBonus = this.countries.has(name) ? 0.1 : 0;
-      const lengthScore = Math.min(name.length / 20, 0.2); // Max 0.2 for length
-      const usLocationBonus = this.usLocations.has(name) ? 0.3 : 0; // Significant bonus for US locations
+      // Try to validate with US location service first
+      const validatedLocation = this._usLocationService.convertToLocation(name);
       
-      const confidence = Math.min(
-        mentionScore * 0.7 + countryBonus + lengthScore + usLocationBonus,
-        1.0
-      );
-      
-      locations.push({
-        name: this.capitalizeLocation(name),
-        confidence: parseFloat(confidence.toFixed(2)),
-        mentions,
-        isUSLocation: this.usLocations.has(name)
-      });
+      if (validatedLocation) {
+        // Use the validated location with enhanced confidence
+        validatedLocation.mentions = mentions;
+        validatedLocation.confidence = Math.min(validatedLocation.confidence + (mentions / totalMentions * 0.3), 1.0);
+        locations.push(validatedLocation);
+      } else {
+        // Fall back to original logic for non-US locations
+        // Calculate confidence based on:
+        // 1. Number of mentions relative to total
+        // 2. Whether it's a known country
+        // 3. Length of the name (longer names tend to be more specific)
+        // 4. US location bonus (prioritize US locations)
+        const mentionScore = totalMentions > 0 ? mentions / totalMentions : 0;
+        const countryBonus = this.countries.has(name) ? 0.1 : 0;
+        const lengthScore = Math.min(name.length / 20, 0.2); // Max 0.2 for length
+        const usLocationBonus = this.usLocations.has(name) ? 0.3 : 0; // Significant bonus for US locations
+        
+        const confidence = Math.min(
+          mentionScore * 0.7 + countryBonus + lengthScore + usLocationBonus,
+          1.0
+        );
+        
+        locations.push({
+          name: this.capitalizeLocation(name),
+          confidence: parseFloat(confidence.toFixed(2)),
+          mentions,
+          isUSLocation: this.usLocations.has(name)
+        });
+      }
     }
     
     // Sort by US location first, then by confidence (descending)

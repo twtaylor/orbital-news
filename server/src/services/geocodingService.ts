@@ -22,6 +22,9 @@ dotenv.config();
 
 export class GeocodingService {
   private geocoder!: NodeGeocoder.Geocoder; // Using the definite assignment assertion
+  private _apiKey: string = '';
+  private _userCoordinates?: Coordinates;
+  private _userZipCode?: string;
   private tierThresholds: TierThresholds;
   private defaultUserLocation: Coordinates;
   private defaultUserZipCode: string = '00000'; // Default ZIP code
@@ -314,17 +317,32 @@ export class GeocodingService {
   }
 
   /**
+   * Get the user's coordinates
+   * @returns User coordinates or undefined if not set
+   */
+  getUserCoordinates(): Coordinates | undefined {
+    return this._userCoordinates;
+  }
+
+  /**
+   * Set the user's coordinates
+   * @param coordinates User coordinates
+   */
+  setUserCoordinates(coordinates: Coordinates): void {
+    this._userCoordinates = coordinates;
+  }
+
+  /**
    * Get the default user ZIP code
    * @returns The default user ZIP code
    */
   getDefaultUserZipCode(): string {
     return this.defaultUserZipCode;
   }
-  
+
   /**
-   * Calculate distance between two ZIP codes
-   * @param fromZipCode Starting ZIP code
-   * @param toZipCode Ending ZIP code
+   * Set the default user ZIP code
+   * @param zipCode ZIP code
    * @returns Promise with distance result
    */
   async calculateDistanceBetweenZipCodes(
