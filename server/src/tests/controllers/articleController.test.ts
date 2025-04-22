@@ -161,7 +161,7 @@ describe('ArticleController', () => {
       expect(mockGetArticles).toHaveBeenCalledWith({
         source: undefined,
         location: undefined,
-        limit: 30,
+        limit: 50,
         daysBack: 7
       });
     });
@@ -200,7 +200,7 @@ describe('ArticleController', () => {
       expect(mockGetArticles).toHaveBeenCalledWith({
         source: 'reddit',
         location: undefined,
-        limit: 30,
+        limit: 50,
         daysBack: 7
       });
     });
@@ -267,7 +267,7 @@ describe('ArticleController', () => {
       expect(mockGetArticles).toHaveBeenCalledWith({
         source: undefined,
         location: undefined,
-        limit: 30,
+        limit: 50,
         daysBack: 7
       });
     });
@@ -331,7 +331,7 @@ describe('ArticleController', () => {
       expect(mockGetArticles).toHaveBeenCalledWith({
         source: 'reddit',
         location: undefined,
-        limit: 30,
+        limit: 50,
         daysBack: 7
       });
     });

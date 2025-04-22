@@ -125,18 +125,51 @@ export class LocationService {
       .filter(loc => loc.confidence >= minConfidence)
       .slice(0, maxLocations);
     
-    // Find primary location (prioritizing cities over countries)
+    // Find primary location with enhanced prioritization
     let primaryLocation: Location | undefined;
     
     if (filteredLocations.length > 0) {
-      // First, try to find a city
-      primaryLocation = filteredLocations.find(loc => 
-        loc.city && loc.city.length > 0 && 
-        // Avoid selecting countries as cities
-        !this.countries.has(loc.city.toLowerCase())
-      );
+      // First priority: US cities mentioned in the title
+      if (article.title) {
+        const titleLower = article.title.toLowerCase();
+        primaryLocation = filteredLocations.find(loc => 
+          loc.isUSLocation && 
+          loc.name && 
+          titleLower.includes(loc.name.toLowerCase()) &&
+          !this.countries.has(loc.name.toLowerCase())
+        );
+      }
       
-      // If no city found, use the highest confidence location
+      // Second priority: US cities (even if not in title)
+      if (!primaryLocation) {
+        primaryLocation = filteredLocations.find(loc => 
+          loc.isUSLocation && 
+          loc.city && 
+          loc.city.length > 0 && 
+          !this.countries.has(loc.city.toLowerCase())
+        );
+      }
+      
+      // Third priority: Any location mentioned in the title that's not a country
+      if (!primaryLocation && article.title) {
+        const titleLower = article.title.toLowerCase();
+        primaryLocation = filteredLocations.find(loc => 
+          loc.name && 
+          titleLower.includes(loc.name.toLowerCase()) &&
+          !this.countries.has(loc.name.toLowerCase())
+        );
+      }
+      
+      // Fourth priority: Any city
+      if (!primaryLocation) {
+        primaryLocation = filteredLocations.find(loc => 
+          loc.city && 
+          loc.city.length > 0 && 
+          !this.countries.has(loc.city.toLowerCase())
+        );
+      }
+      
+      // Final fallback: highest confidence location
       if (!primaryLocation) {
         primaryLocation = filteredLocations[0];
       }
@@ -286,12 +319,24 @@ export class LocationService {
       const titleDoc = nlp(title);
       const titlePlaces = titleDoc.places();
       
+      // Process places from the title
       titlePlaces.forEach(place => {
         const name = place.text().toLowerCase();
         if (!this.excludedTerms.has(name)) {
           // Add extra weight to title mentions (equivalent to multiple body mentions)
           const count = locationMentions.get(name) || 0;
           locationMentions.set(name, count + 3); // Title locations get 3x the weight
+        }
+      });
+      
+      // Additional check for known US cities in the title that might not be recognized by compromise
+      const titleLower = title.toLowerCase();
+      // Check for known US cities in the title
+      this.usLocations.forEach((_, cityName) => {
+        if (titleLower.includes(cityName.toLowerCase()) && !this.excludedTerms.has(cityName.toLowerCase())) {
+          // Add with high weight if found in title
+          const count = locationMentions.get(cityName.toLowerCase()) || 0;
+          locationMentions.set(cityName.toLowerCase(), count + 5); // Known US cities in title get 5x weight
         }
       });
     }
@@ -349,13 +394,27 @@ export class LocationService {
       }
     }
     
-    // Sort by US location first, then by confidence (descending)
+    // Enhanced sorting with more sophisticated prioritization
     return locations.sort((a, b) => {
-      // First prioritize US locations
+      // First, prioritize US cities over other locations
+      const aIsUSCity = a.isUSLocation && a.city && !this.countries.has((a.name || '').toLowerCase());
+      const bIsUSCity = b.isUSLocation && b.city && !this.countries.has((b.name || '').toLowerCase());
+      
+      if (aIsUSCity && !bIsUSCity) return -1;
+      if (!aIsUSCity && bIsUSCity) return 1;
+      
+      // Second, prioritize any US location over non-US locations
       if (a.isUSLocation && !b.isUSLocation) return -1;
       if (!a.isUSLocation && b.isUSLocation) return 1;
       
-      // Then sort by confidence
+      // Third, prioritize cities over countries
+      const aIsCountry = this.countries.has((a.name || '').toLowerCase());
+      const bIsCountry = this.countries.has((b.name || '').toLowerCase());
+      
+      if (!aIsCountry && bIsCountry) return -1;
+      if (aIsCountry && !bIsCountry) return 1;
+      
+      // Finally, sort by confidence
       return b.confidence - a.confidence;
     });
   }

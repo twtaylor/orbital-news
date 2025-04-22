@@ -297,10 +297,21 @@ describe('LocationService Edge Cases', () => {
         tags: ['conference', 'international']
       };
 
+      // Enable debug logging for this test
+      const originalConsoleLog = console.log;
+      console.log = (...args) => originalConsoleLog(...args);
+
       const result = await locationService.extractLocations(article, {
         fetchFullContent: false,
         includeGeoData: true
       });
+
+      // Debug output
+      console.log('All extracted locations:');
+      result.allLocations.forEach(loc => {
+        console.log(`- ${loc.name} (confidence: ${loc.confidence}, isUSLocation: ${loc.isUSLocation || false})`);
+      });
+      console.log('Primary location:', result.primaryLocation ? result.primaryLocation.name : 'none');
 
       // Verify results
       expect(result.allLocations.length).toBeGreaterThan(0);
@@ -310,6 +321,9 @@ describe('LocationService Edge Cases', () => {
       if (result.primaryLocation) {
         expect(result.primaryLocation.name.toLowerCase()).toContain('chicago');
       }
+
+      // Restore console.log
+      console.log = originalConsoleLog;
     });
   });
 });
