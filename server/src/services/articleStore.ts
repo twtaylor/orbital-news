@@ -1,5 +1,5 @@
 import { Article } from '../types/models/article.type';
-import articleModel from '../models/ArticleSchema';
+import ArticleModel from '../models/ArticleSchema';
 import mongoManager from '../database/MongoManager';
 import { GeocodingService } from './geocodingService';
 
@@ -18,6 +18,8 @@ export class ArticleStore {
    * @returns Number of articles successfully stored
    */
   async storeArticles(articles: Article[]): Promise<number> {
+    console.log(`Attempting to store ${articles.length} articles`);
+    
     if (!mongoManager.isConnected()) {
       console.warn('MongoDB not connected, skipping article storage');
       return 0;
@@ -25,12 +27,16 @@ export class ArticleStore {
 
     try {
       let savedCount = 0;
-      let duplicateCount = 0;
+      const duplicateCount = 0; // Not used after removing the skip logic
       
       // Process each article
       for (const article of articles) {
+        // Debug log the article being processed
+        console.log(`Processing article: ${article.id} - ${article.title.substring(0, 30)}...`);
+        
         // Check if article already exists by ID or URL
-        const existingArticle = await articleModel.findOne({ 
+        // Make sure to use the lean: false option to get a Mongoose document that has save() method
+        const existingArticle = await ArticleModel.findOne({ 
           $or: [
             { articleId: article.id },
             { sourceUrl: article.sourceUrl }
@@ -38,27 +44,77 @@ export class ArticleStore {
         });
         
         if (existingArticle) {
-          // Skip update if the article was fetched recently (within the last 24 hours)
+          // Debug log for existing article
+          console.log(`Found existing article: ${article.id} - ${article.title.substring(0, 30)}...`);
+          
+          // Always update existing articles regardless of when they were last fetched
           const lastFetchTime = new Date(existingArticle.fetchedAt);
           const hoursSinceLastFetch = (Date.now() - lastFetchTime.getTime()) / (1000 * 60 * 60);
           
-          if (hoursSinceLastFetch < 24) {
-            duplicateCount++;
-            continue;
-          }
+          console.log(`Updating existing article (${hoursSinceLastFetch.toFixed(2)} hours old): ${article.id}`);
           
           // Update existing article with new data if it's older than 24 hours
-          existingArticle.title = article.title;
-          existingArticle.content = article.content;
-          existingArticle.location = article.location;
-          existingArticle.mass = article.mass;
-          existingArticle.fetchedAt = new Date();
-          
-          await existingArticle.save();
-          savedCount++;
+          try {
+            // Check if existingArticle is a valid Mongoose document
+            if (existingArticle && typeof existingArticle.save === 'function') {
+              existingArticle.title = article.title;
+              existingArticle.content = article.content;
+              existingArticle.location = article.location;
+              existingArticle.mass = article.mass;
+              existingArticle.fetchedAt = new Date();
+              
+              await existingArticle.save();
+              savedCount++;
+              console.log(`Successfully updated existing article: ${article.id}`);
+            } else {
+              // If existingArticle is not a valid Mongoose document, use findOneAndUpdate instead
+              console.log(`Using findOneAndUpdate for article: ${article.id} (not a valid Mongoose document)`);
+              await ArticleModel.findOneAndUpdate(
+                { $or: [{ articleId: article.id }, { sourceUrl: article.sourceUrl }] },
+                {
+                  $set: {
+                    title: article.title,
+                    content: article.content,
+                    location: article.location,
+                    mass: article.mass,
+                    fetchedAt: new Date()
+                  }
+                },
+                { new: true }
+              );
+              savedCount++;
+              console.log(`Successfully updated existing article with findOneAndUpdate: ${article.id}`);
+            }
+          } catch (updateError) {
+            console.error(`Error updating article ${article.id}:`, updateError);
+            // Try to create a new article as a fallback
+            try {
+              console.log(`Attempting to create new article as fallback for: ${article.id}`);
+              await ArticleModel.create({
+                articleId: article.id,
+                title: article.title,
+                content: article.content,
+                source: article.source,
+                sourceUrl: article.sourceUrl,
+                author: article.author,
+                publishedAt: article.publishedAt,
+                location: article.location,
+                tags: article.tags,
+                mass: article.mass,
+                fetchedAt: new Date()
+              });
+              savedCount++;
+              console.log(`Successfully created new article as fallback: ${article.id}`);
+            } catch (createError) {
+              console.error(`Error creating fallback article ${article.id}:`, createError);
+            }
+          }
         } else {
-          // Create new article document
-          const newArticle = new articleModel({
+          // Debug log for new article
+          console.log(`Creating new article: ${article.id} - ${article.title.substring(0, 30)}...`);
+          
+          // Create new article document using create method
+          await ArticleModel.create({
             articleId: article.id, // Map id to articleId for MongoDB
             title: article.title,
             content: article.content,
@@ -72,8 +128,8 @@ export class ArticleStore {
             fetchedAt: new Date()
           });
           
-          await newArticle.save();
           savedCount++;
+          console.log(`Successfully created new article: ${article.id}`);
         }
       }
       
@@ -136,8 +192,8 @@ export class ArticleStore {
       }
       
       // Execute query
-      const storedArticles = await articleModel.find(query)
-        .sort({ publishedAt: -1 })
+      const storedArticles = await ArticleModel.find(query)
+        .sort({ fetchedAt: -1 })
         .limit(limit)
         .lean();
       
@@ -191,7 +247,7 @@ export class ArticleStore {
       };
       
       // Get count of articles fetched today
-      const count = await articleModel.countDocuments(query);
+      const count = await ArticleModel.countDocuments(query);
       return count;
     } catch (error) {
       console.error('Error counting today\'s articles:', error);

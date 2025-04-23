@@ -1,15 +1,18 @@
 // No longer need to import determineTier as tier is calculated dynamically in the controller
 import { Article } from '../types/models/article.type';
 import { RedditService } from './redditService';
+import { NewsAPIService } from './newsAPIService';
 
 /**
  * NewsService handles fetching and processing articles from various data sources
  */
 export class NewsService {
   private _redditService: RedditService;
+  private _newsAPIService: NewsAPIService;
   
   constructor() {
     this._redditService = new RedditService();
+    this._newsAPIService = new NewsAPIService();
   }
   
   /**
@@ -22,6 +25,17 @@ export class NewsService {
   async fetchFromReddit(subreddit: string = 'news', limit: number = 50, forceFetch: boolean = false): Promise<Article[]> {
     console.log(`Fetching from Reddit subreddit: ${subreddit}, limit: ${limit}, forceFetch: ${forceFetch}`);
     return this._redditService.fetchArticles(subreddit, limit, 'day', true, forceFetch);
+  }
+  
+  /**
+   * Fetch articles from NewsAPI
+   * @param limit Optional number of articles to fetch (default: 50)
+   * @param forceFetch Optional parameter to force fetching from API even if stored articles exist (default: false)
+   * @returns Promise with array of articles
+   */
+  async fetchFromNewsAPI(limit: number = 50, forceFetch: boolean = false): Promise<Article[]> {
+    console.log(`Fetching from NewsAPI, limit: ${limit}, forceFetch: ${forceFetch}`);
+    return this._newsAPIService.fetchArticles(limit, forceFetch);
   }
   
   /**

@@ -1,10 +1,11 @@
 import * as dotenv from 'dotenv';
 import fetch from 'node-fetch';
-import { Article, ArticleLocation, TierType } from '../types/models/article.type';
+import { Article, TierType } from '../types/models/article.type';
 import { RedditTokenResponse, RedditPost, RedditPostData } from '../types/services/reddit.type';
 import { LocationService } from './locationService';
 import { ArticleStore } from './articleStore';
 import { GeocodingService } from './geocodingService';
+import { geocodeArticleLocation } from '../utils/locationUtils';
 import MongoManager from '../database/MongoManager';
 
 // Load environment variables
@@ -245,180 +246,18 @@ export class RedditService {
       mass: cappedMass
     };
 
-    // Try to extract location information
-    try {
-      // Extract location from title and content
-      // Use a more conservative approach - don't try to fetch full content by default
-      // to avoid issues with paywalled sites
-      const locationResult = await this.locationService.extractLocations(article, {
-        fetchFullContent: false, // Don't fetch full content by default to avoid paywall issues
-        minConfidence: 0.4, // Require reasonable confidence
-        includeGeoData: true // Ensure geocoding is performed
-      });
-
-      const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
-      if (!isTestEnvironment) {
-        console.debug(`Article ${article.id}: Extracted primary location: ${locationResult.primaryLocation?.name || 'None'}`);
-      }
-      
-      // Set the location if we found one with reasonable confidence
-      if (locationResult.primaryLocation && locationResult.primaryLocation.confidence >= 0.4) {
-        // Check if we have detailed location data (from geocoding)
-        if (locationResult.primaryLocation.latitude && locationResult.primaryLocation.longitude) {
-          if (!isTestEnvironment) {
-            console.debug(`Article ${article.id}: Using geocoded data from LocationService: ${locationResult.primaryLocation.name} (${locationResult.primaryLocation.latitude}, ${locationResult.primaryLocation.longitude}, ${locationResult.primaryLocation.zipCode})`);
-          }
-          
-          // Create structured location object with required zipCode
-          const structuredLocation: ArticleLocation = {
-            location: locationResult.primaryLocation.name || 'Unknown',
-            latitude: locationResult.primaryLocation.latitude,
-            longitude: locationResult.primaryLocation.longitude,
-            zipCode: locationResult.primaryLocation.zipCode || defaultZipCode
-          };
-          
-          // Set the structured location
-          article.location = structuredLocation;
-        } else {
-          // For simple string locations, we need to create a structured object with zipCode
-          // Try to geocode the location name to get a zipCode
-          try {
-            if (!isTestEnvironment) {
-              console.debug(`Article ${article.id}: Attempting to geocode location: ${locationResult.primaryLocation.name}`);
-            }
-            const geocodedLocation = await this.geocodingService.geocodeLocation(locationResult.primaryLocation.name);
-            
-            if (geocodedLocation && geocodedLocation.zipCode) {
-              if (!isTestEnvironment) {
-              console.debug(`Article ${article.id}: Successfully geocoded to: ${geocodedLocation.zipCode} (${geocodedLocation.coordinates.latitude}, ${geocodedLocation.coordinates.longitude})`);
-            }
-              
-              article.location = {
-                location: locationResult.primaryLocation.name || 'Unknown',
-                latitude: geocodedLocation.coordinates.latitude,
-                longitude: geocodedLocation.coordinates.longitude,
-                zipCode: geocodedLocation.zipCode
-              };
-            } else {
-              // If geocoding fails, use the default zipCode
-              console.debug(`Article ${article.id}: Geocoding failed - no valid result returned`);
-              article.location = {
-                location: locationResult.primaryLocation.name || 'Unknown',
-                latitude: 0,
-                longitude: 0,
-                zipCode: defaultZipCode
-              };
-            }
-          } catch (error) {
-            // If geocoding fails, use the default zipCode
-            console.error(`Article ${article.id}: Geocoding error:`, error);
-            article.location = {
-              location: locationResult.primaryLocation.name || 'Unknown',
-              latitude: 0,
-              longitude: 0,
-              zipCode: defaultZipCode
-            };
-          }
-        }
-      } else {
-        // If no primary location with good confidence was found, check if the article's location
-        // is a US state or major city that we can geocode directly
-        const currentLocation = typeof article.location === 'object' ? 
-          (article.location as { location: string }).location : 'Unknown';
-        
-        if (currentLocation && currentLocation !== 'Unknown') {
-          try {
-            if (!isTestEnvironment) {
-              console.debug(`Article ${article.id}: No primary location found, trying to geocode original location: ${currentLocation}`);
-            }
-            const fallbackGeocode = await this.geocodingService.geocodeLocation(currentLocation);
-            
-            if (fallbackGeocode && fallbackGeocode.coordinates.latitude && fallbackGeocode.coordinates.longitude) {
-              if (!isTestEnvironment) {
-                console.debug(`Article ${article.id}: Successfully geocoded original location to: ${fallbackGeocode.zipCode || defaultZipCode} (${fallbackGeocode.coordinates.latitude}, ${fallbackGeocode.coordinates.longitude})`);
-              }
-              
-              article.location = {
-                location: currentLocation,
-                latitude: fallbackGeocode.coordinates.latitude,
-                longitude: fallbackGeocode.coordinates.longitude,
-                zipCode: fallbackGeocode.zipCode || defaultZipCode
-              };
-            }
-          } catch (error) {
-            console.error(`Article ${article.id}: Fallback geocoding error:`, error);
-          }
-        }
-      }
-      
-      // If we didn't get a good location from the title/content and the article is from a news source,
-      // try to fetch full content only for non-paywalled sites
-      if ((!locationResult.primaryLocation || locationResult.primaryLocation.confidence < 0.4) && 
-          post.url && post.url.includes('reddit.com') === false) {
-        
-        // Try again with full content fetch for non-Reddit URLs that might have more location info
-        const fullContentResult = await this.locationService.extractLocations(article, {
-          fetchFullContent: true,  // Now try with full content
-          minConfidence: 0.4
-        });
-        
-        if (fullContentResult.primaryLocation && 
-            fullContentResult.primaryLocation.confidence >= 0.4 && 
-            (!locationResult.primaryLocation || 
-             fullContentResult.primaryLocation.confidence > locationResult.primaryLocation.confidence)) {
-          
-          // For full content results, ensure we have a structured location with zipCode
-          try {
-            const geocodedLocation = await this.geocodingService.geocodeLocation(fullContentResult.primaryLocation.name);
-            if (geocodedLocation && geocodedLocation.zipCode) {
-              article.location = {
-                location: fullContentResult.primaryLocation.name || 'Unknown',
-                latitude: geocodedLocation.coordinates.latitude,
-                longitude: geocodedLocation.coordinates.longitude,
-                zipCode: geocodedLocation.zipCode
-              };
-            } else {
-              // If geocoding fails, use the default zipCode
-              article.location = {
-                location: fullContentResult.primaryLocation.name || 'Unknown',
-                latitude: 0,
-                longitude: 0,
-                zipCode: defaultZipCode
-              };
-            }
-          } catch (error) {
-            // If geocoding fails, use the default zipCode
-            article.location = {
-              location: fullContentResult.primaryLocation.name || 'Unknown',
-              latitude: 0,
-              longitude: 0,
-              zipCode: defaultZipCode
-            };
-          }
-        }
-      }
-    } catch (error) {
-      console.warn(`Failed to extract location for article ${article.id}: ${error}`);
-      // Ensure location is always a structured object with zipCode
-      if (typeof article.location === 'string') {
-        article.location = {
-          location: article.location,
-          latitude: 0,
-          longitude: 0,
-          zipCode: defaultZipCode
-        };
-      }
-    }
+    // Use the helper function to geocode the article location
+    const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
     
-    // Final check to ensure location is always a structured object with zipCode
-    if (typeof article.location === 'string') {
-      article.location = {
-        location: article.location,
-        latitude: 0, // Default coordinates since we couldn't extract any
-        longitude: 0, // Default coordinates since we couldn't extract any
-        zipCode: defaultZipCode
-      };
-    }
+    const geocodedArticle = await geocodeArticleLocation(article, this.locationService, this.geocodingService, {
+      fetchFullContent: post.url ? !post.url.includes('reddit.com') : false,
+      minConfidence: 0.3,
+      isTestEnvironment,
+      defaultZipCode: '00000'
+    });
+    
+    // Update the article with the geocoded location
+    article.location = geocodedArticle.location;
     
     return article;
   }

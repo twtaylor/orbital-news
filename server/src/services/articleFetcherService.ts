@@ -78,12 +78,18 @@ export class ArticleFetcherService {
       const redditArticles = await this.fetchFromSource('reddit', true);
       console.info(`Fetched ${redditArticles.length} articles from Reddit`);
       
-      // Process and geocode the articles
-      const processedArticles = await this.processArticles(redditArticles);
-      console.info(`Processed ${processedArticles.length} articles with geocoding information`);
+      // Fetch articles from NewsAPI (real data source)
+      const newsAPIArticles = await this.fetchFromSource('newsapi', true);
+      console.info(`Fetched ${newsAPIArticles.length} articles from NewsAPI`);
       
-      // Only store articles from real sources (currently only Reddit)
-      const articlesToStore = [...processedArticles];
+      // Process and geocode all real data source articles
+      const processedRedditArticles = await this.processArticles(redditArticles);
+      const processedNewsAPIArticles = await this.processArticles(newsAPIArticles);
+      
+      console.info(`Processed ${processedRedditArticles.length + processedNewsAPIArticles.length} articles with geocoding information`);
+      
+      // Store articles from all real sources
+      const articlesToStore = [...processedRedditArticles, ...processedNewsAPIArticles];
       
       // Fetch articles from other sources (these are currently mocked)
       // but don't store them in the database
@@ -125,6 +131,10 @@ export class ArticleFetcherService {
         case 'reddit':
           // Use forceFetch=true to ensure we always get fresh articles
           articles = await this.newsService.fetchFromReddit('news', this.defaultArticleLimit, true);
+          break;
+        case 'newsapi':
+          // Use forceFetch=true to ensure we always get fresh articles
+          articles = await this.newsService.fetchFromNewsAPI(this.defaultArticleLimit, true);
           break;
         case 'twitter':
           articles = await this.newsService.fetchFromTwitter();
