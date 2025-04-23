@@ -36,12 +36,19 @@ export const getArticles = async (req: Request, res: Response): Promise<void> =>
     // Add tier information to articles for API response
     // If user provided a zip code, set it in the geocoding service
     if (userZipCode) {
-      await geocodingService.setUserLocationByZipCode(userZipCode);
-      console.log(`User location set to ZIP code: ${userZipCode}`);
+      const success = await geocodingService.setUserLocationByZipCode(userZipCode);
+      if (success) {
+        console.log(`User location set to ZIP code: ${userZipCode}`);
+        // Log the actual user coordinates for debugging
+        const userLocation = geocodingService.getUserLocation();
+        console.log(`User coordinates: ${JSON.stringify(userLocation)}`);
+      } else {
+        console.warn(`Failed to set user location for ZIP code: ${userZipCode}`);
+      }
     }
     
     console.log('Calculating article tiers based on user location...');
-    const articlesWithTierPromises = articles.map(article => addTierToArticle(article));
+    const articlesWithTierPromises = articles.map(article => addTierToArticle(article, geocodingService));
     const articlesWithTier = await Promise.all(articlesWithTierPromises);
     
     // Log the number of articles retrieved
@@ -95,7 +102,7 @@ export const getArticleById = async (req: Request, res: Response): Promise<void>
     }
     
     // Add tier information to the article for API response
-    const articleWithTier = await addTierToArticle(articles[0]);
+    const articleWithTier = await addTierToArticle(articles[0], geocodingService);
     
     res.status(200).json({
       status: 'success',

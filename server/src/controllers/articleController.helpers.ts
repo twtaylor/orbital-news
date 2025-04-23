@@ -5,16 +5,13 @@
 import { Article, ArticleWithTier, TierType } from '../types/models/article.type';
 import { GeocodingService } from '../services/geocodingService';
 
-// Initialize geocoding service
-const geocodingService = new GeocodingService();
-
 /**
  * Add tier information to an article for API responses
  * This calculates the tier dynamically based on the article's location and user's location
  * @param article The article to add tier to
  * @returns The article with tier information
  */
-export async function addTierToArticle(article: Article): Promise<ArticleWithTier> {
+export async function addTierToArticle(article: Article, geocodingService: GeocodingService): Promise<ArticleWithTier> {
   // Create a copy of the article with tier information
   const articleWithTier = { ...article } as ArticleWithTier;
   
@@ -48,7 +45,7 @@ export async function addTierToArticle(article: Article): Promise<ArticleWithTie
             miles: distanceInMiles
           };
           
-          // Determine the tier based on the distance
+          // Determine the tier based on the distance in kilometers
           articleWithTier.tier = geocodingService.determineTierFromDistance(distanceInKm);
         }
       } catch (error) {
@@ -119,7 +116,7 @@ export function calculateTierFromMass(mass: number): TierType {
  * @param articles Array of articles with tier information
  * @returns Object with articles grouped by tier
  */
-export function groupArticlesByTier(articles: ArticleWithTier[]) {
+export function groupArticlesByTier0(articles: ArticleWithTier[]) {
   return {
     close: articles.filter(article => article.tier === 'close'),
     medium: articles.filter(article => article.tier === 'medium'),

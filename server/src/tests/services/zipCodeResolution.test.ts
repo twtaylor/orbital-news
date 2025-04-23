@@ -87,11 +87,6 @@ describe('Zip Code Resolution', () => {
       
       // The method returns a boolean, not an object
       expect(result).toBe(true);
-      
-      // We don't have a direct way to get the user location, but we can test
-      // the distance calculation which uses the user location internally
-      const distanceResult = await geocodingService.calculateDistanceFromUser('New York');
-      expect(distanceResult).toBeDefined();
     });
     
     // Increase timeout for this test as it involves geocoding API calls

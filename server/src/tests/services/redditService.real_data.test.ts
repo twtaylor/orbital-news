@@ -58,14 +58,10 @@ jest.mock('../../services/redditService', () => {
         // Create a new LocationService and GeocodingService for processing
         const locationService = new LocationService();
         // Create geocoding service with US prioritization enabled
-        const geocodingService = new GeocodingService({
-          // Use opencage as provider which works well for US locations
-          provider: 'opencage',
-          apiKey: process.env.GEOCODING_API_KEY || 'dummy-key-for-tests'
-        });
+        const geocodingService = new GeocodingService();
         
-        // Enable US prioritization to ensure US cities are preferred
-        geocodingService.setUSPrioritization(true);
+        // Set the API key for testing
+        process.env.OPENCAGE_API_KEY = process.env.GEOCODING_API_KEY || 'dummy-key-for-tests';
         
         // Process each article through the location and geocoding services
         const processedArticles = await Promise.all(

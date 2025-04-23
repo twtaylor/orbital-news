@@ -127,9 +127,9 @@ importers:
       node-fetch:
         specifier: ^2.7.0
         version: 2.7.0
-      node-geocoder:
-        specifier: ^4.4.1
-        version: 4.4.1
+      opencage-api-client:
+        specifier: ^1.1.0
+        version: 1.1.0
       pg:
         specifier: ^8.14.1
         version: 8.14.1
@@ -1056,9 +1056,6 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  bluebird@3.7.2:
-    resolution: {integrity: sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==}
-
   body-parser@1.20.3:
     resolution: {integrity: sha512-7rAxByjUMqQ3/bHJy7D6OGXvx/MMc4IqBn/X0fcM1QUcAItpZrBEYhWGem+tzXH90c+G01ypMcYJBO9Y30203g==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
@@ -1200,6 +1197,9 @@ packages:
   cron-parser@5.1.1:
     resolution: {integrity: sha512-xNhwjTUTJcvevF4EvOxB3xYpEKC/qOAmykR+2Qf91ARIfdbjStUwo8qpem6jjzdwFgoo4pnf3sS264xG0G858w==}
     engines: {node: '>=18'}
+
+  cross-fetch@4.1.0:
+    resolution: {integrity: sha512-uKm5PU+MHTootlWEY+mZ4vvXoCn4fLQxT9dSc1sXVMSFkINTJVN8cAQROpwcKm8bJ/c7rgZVIBWzH5T78sNZZw==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -2086,10 +2086,6 @@ packages:
       encoding:
         optional: true
 
-  node-geocoder@4.4.1:
-    resolution: {integrity: sha512-krx50Gxl4yBgMBhfUhOuNwStzLi+gAYaa46gs0e+ftTvaqLsjKYDFVxC8ff6RLc2f11Gp7Y+R1mkzwsE2c0chw==}
-    engines: {node: '>=18'}
-
   node-int64@0.4.0:
     resolution: {integrity: sha512-O5lz91xSOeoXP6DulyHfllpq+Eg00MWitZIbtPfoSEvqIHdl5gfcY6hYzDWnj0qD5tz52PI08u9qUvSVeUBeHw==}
 
@@ -2127,6 +2123,9 @@ packages:
   onetime@5.1.2:
     resolution: {integrity: sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==}
     engines: {node: '>=6'}
+
+  opencage-api-client@1.1.0:
+    resolution: {integrity: sha512-1BMw/wK1f5mdN8x9gUkGH5R/Dv5utvZlQO4LcXmT7gjJlXLojto3csXOco3VsbJCsEyzUer6TAmv6jdMfK+83Q==}
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -3838,8 +3837,6 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  bluebird@3.7.2: {}
-
   body-parser@1.20.3:
     dependencies:
       bytes: 3.1.2
@@ -3997,6 +3994,12 @@ snapshots:
   cron-parser@5.1.1:
     dependencies:
       luxon: 3.6.1
+
+  cross-fetch@4.1.0:
+    dependencies:
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
 
   cross-spawn@7.0.6:
     dependencies:
@@ -5043,13 +5046,6 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
-  node-geocoder@4.4.1:
-    dependencies:
-      bluebird: 3.7.2
-      node-fetch: 2.7.0
-    transitivePeerDependencies:
-      - encoding
-
   node-int64@0.4.0: {}
 
   node-releases@2.0.19: {}
@@ -5088,6 +5084,13 @@ snapshots:
   onetime@5.1.2:
     dependencies:
       mimic-fn: 2.1.0
+
+  opencage-api-client@1.1.0:
+    dependencies:
+      cross-fetch: 4.1.0
+      dotenv: 16.4.7
+    transitivePeerDependencies:
+      - encoding
 
   optionator@0.9.4:
     dependencies:

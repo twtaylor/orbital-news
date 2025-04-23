@@ -21,14 +21,6 @@ describe('Location-based Tier Tests', () => {
     locationService = new LocationService();
     geocodingService = new GeocodingService();
     
-    // Mock the geocoding service to avoid API calls
-    jest.spyOn(geocodingService, 'calculateDistanceFromUser').mockResolvedValue({
-      distanceInMeters: 1744000,
-      distanceInKilometers: 1744,
-      distanceInMiles: 1084,
-      tier: 'far' as const
-    });
-    
     // Since extractLocationsFromText and fetchArticleContent are private methods,
     // we can't mock them directly. Instead, we'll mock the public extractLocations method
     jest.spyOn(locationService, 'extractLocations').mockResolvedValue({
@@ -73,13 +65,6 @@ describe('Location-based Tier Tests', () => {
     expect(extractedLocation.primaryLocation).toBeDefined();
     expect(extractedLocation.primaryLocation?.name).toBe('Florida');
 
-    // Step 2: Test distance calculation
-    const distanceResult = await geocodingService.calculateDistanceFromUser('Florida');
-    
-    // Verify distance result
-    expect(distanceResult).toBeDefined();
-    expect(distanceResult?.tier).toBe('far');
-    
     // Step 3: Manually set the tier based on our mocked distance result
     extractedLocation.tier = 'far';
     

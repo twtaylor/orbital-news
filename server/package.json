@@ -45,7 +45,7 @@
     "mongoose": "^8.13.2",
     "node-cron": "^3.0.3",
     "node-fetch": "^2.7.0",
-    "node-geocoder": "^4.4.1",
+    "opencage-api-client": "^1.1.0",
     "pg": "^8.14.1"
   },
   "devDependencies": {

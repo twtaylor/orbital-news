@@ -216,7 +216,7 @@ export class LocationService {
     let tier = undefined;
     
     if (primaryLocation && primaryLocation.latitude && primaryLocation.longitude) {
-      const userCoordinates = this.geocodingService.getUserCoordinates();
+      const userCoordinates = this.geocodingService.getUserLocation();
       
       if (userCoordinates) {
         // Calculate distance to user location
