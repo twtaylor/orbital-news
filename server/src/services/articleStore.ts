@@ -53,7 +53,7 @@ export class ArticleStore {
           
           console.log(`Updating existing article (${hoursSinceLastFetch.toFixed(2)} hours old): ${article.id}`);
           
-          // Update existing article with new data if it's older than 24 hours
+          // Update existing article with new data
           try {
             // Check if existingArticle is a valid Mongoose document
             if (existingArticle && typeof existingArticle.save === 'function') {

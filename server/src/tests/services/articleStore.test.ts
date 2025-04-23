@@ -36,7 +36,8 @@ jest.mock('../../models/ArticleSchema', () => {
   Object.assign(MockArticleModel, {
     findOne: findOneMock,
     find: findMock,
-    countDocuments: countDocumentsMock
+    countDocuments: countDocumentsMock,
+    create: jest.fn().mockResolvedValue({})
   });
   
   // Add prototype for instance methods
@@ -137,8 +138,8 @@ describe('ArticleStore', () => {
       // Verify results
       expect(result).toBe(1); // 1 article stored
       expect(ArticleModel.findOne).toHaveBeenCalledWith({ $or: [{ articleId: mockArticle.id }, { sourceUrl: mockArticle.sourceUrl }] });
-      // Verify that a new ArticleModel was created
-      expect(ArticleModel).toHaveBeenCalled();
+      // Verify that create was called
+      expect(ArticleModel.create).toHaveBeenCalled();
     });
     
     it('should update existing articles if they are older than 24 hours', async () => {
@@ -159,7 +160,7 @@ describe('ArticleStore', () => {
       expect(oldArticle.save).toHaveBeenCalled();
     });
     
-    it('should skip updating articles that were fetched within the last 24 hours', async () => {
+    it('should update articles regardless of when they were last fetched', async () => {
       // Set the fetchedAt date to be within the last 24 hours
       const recentDate = new Date();
       recentDate.setHours(recentDate.getHours() - 12); // 12 hours ago
@@ -172,9 +173,9 @@ describe('ArticleStore', () => {
       const result = await articleStore.storeArticles([mockArticle]);
       
       // Verify results
-      expect(result).toBe(0); // 0 articles updated (skipped due to recent fetch)
+      expect(result).toBe(1); // 1 article updated (we always update regardless of fetch time)
       expect(ArticleModel.findOne).toHaveBeenCalledWith({ $or: [{ articleId: mockArticle.id }, { sourceUrl: mockArticle.sourceUrl }] });
-      expect(recentArticle.save).not.toHaveBeenCalled();
+      expect(recentArticle.save).toHaveBeenCalled();
     });
     
     it('should return 0 when MongoDB is not connected', async () => {
@@ -227,7 +228,7 @@ describe('ArticleStore', () => {
       
       // We need to check that find was called, but we don't care about the exact date value
       expect(ArticleModel.find).toHaveBeenCalled();
-      expect(mockFind.sort).toHaveBeenCalledWith({ publishedAt: -1 });
+      expect(mockFind.sort).toHaveBeenCalledWith({ fetchedAt: -1 });
       expect(mockFind.limit).toHaveBeenCalledWith(100);
       
       // Restore the original Date.now

@@ -2,8 +2,31 @@
  * Jest setup file for MongoDB testing
  * This file automatically mocks mongoose for all tests
  * and sets up the test environment
+ *
+ * Console logging behavior:
+ * - By default, all console logs are shown during tests for better debugging
+ * - Set DISABLE_CONSOLE_LOGGING=1 to suppress console output (used by 'pnpm test')
+ * - Use pnpm test:verbose to see all console logs
  */
 
+// Store original console methods to restore them later
+// IMPORTANT: This must be done before any other imports to ensure all console logs are captured
+const originalConsoleLog = console.log;
+const originalConsoleInfo = console.info;
+const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+const originalConsoleDebug = console.debug;
+
+// Immediately suppress console output if DISABLE_CONSOLE_LOGGING is set
+if (process.env.DISABLE_CONSOLE_LOGGING === '1') {
+  console.log = jest.fn();
+  console.info = jest.fn();
+  console.warn = jest.fn();
+  console.error = jest.fn();
+  console.debug = jest.fn();
+}
+
+// Now import other modules after console mocking is set up
 import dotenv from 'dotenv';
 import mongooseMock from '../mocks/mongooseMock';
 
@@ -21,22 +44,11 @@ process.env.GEOCODING_API_KEY = 'test_api_key';
 // Mock mongoose module
 jest.mock('mongoose', () => mongooseMock);
 
-// Suppress console output during tests to reduce noise
-const originalConsoleLog = console.log;
-const originalConsoleInfo = console.info;
-const originalConsoleWarn = console.warn;
-const originalConsoleError = console.error;
-
 // Set up global test environment
 beforeAll(() => {
-  // Suppress console output unless DEBUG_TESTS is set
-  if (!process.env.DEBUG_TESTS) {
-    console.log = jest.fn();
-    console.info = jest.fn();
-    console.warn = jest.fn();
-    console.error = jest.fn();
-  } else {
-    console.log('Test environment initialized with mongoose mocks');
+  // Display logging status message only if not already suppressed
+  if (process.env.DISABLE_CONSOLE_LOGGING !== '1') {
+    originalConsoleLog('Console logging enabled for tests. Use pnpm test to disable logs.');
   }
 });
 
@@ -49,6 +61,7 @@ afterAll(() => {
   console.info = originalConsoleInfo;
   console.warn = originalConsoleWarn;
   console.error = originalConsoleError;
+  console.debug = originalConsoleDebug;
 });
 
 // Export empty object to satisfy Jest's setup file requirements
