@@ -3,6 +3,7 @@ import articleStore from '../services/articleStore';
 import { articleFetcher } from '../services/articleFetcherService';
 import { GeocodingService } from '../services/geocodingService';
 import { addTierToArticle } from './articleController.helpers';
+import userZipService from '../services/userZipService';
 
 // Initialize services
 const articleStoreInstance = new articleStore();
@@ -36,6 +37,9 @@ export const getArticles = async (req: Request, res: Response): Promise<void> =>
     // Add tier information to articles for API response
     // If user provided a zip code, set it in the geocoding service
     if (userZipCode) {
+      // Record the zip code usage in our database
+      await userZipService.recordZipUsage(userZipCode);
+      
       const success = await geocodingService.setUserLocationByZipCode(userZipCode);
       if (success) {
         console.log(`User location set to ZIP code: ${userZipCode}`);

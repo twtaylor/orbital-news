@@ -48,6 +48,18 @@ jest.mock('../../services/geocodingService', () => {
   };
 });
 
+// Mock the userZipService module
+jest.mock('../../services/userZipService', () => ({
+  __esModule: true,
+  default: {
+    recordZipUsage: jest.fn().mockResolvedValue({ zipCode: '94103', count: 1, lastUsed: new Date() })
+  }
+}));
+
+// Get the mocked implementation
+const userZipServiceMock = jest.requireMock('../../services/userZipService').default;
+const mockRecordZipUsage = userZipServiceMock.recordZipUsage;
+
 // Mock the articleFetcherService module
 jest.mock('../../services/articleFetcherService', () => {
   const mockFetchAndStoreArticles = jest.fn();
@@ -300,6 +312,9 @@ describe('ArticleController', () => {
       
       // Call the controller method
       await getArticles(mockRequest as Request, mockResponse as Response);
+      
+      // Verify that recordZipUsage was called with the correct zip code
+      expect(mockRecordZipUsage).toHaveBeenCalledWith('94103');
       
       // Verify that setUserLocationByZipCode was called with the correct zip code
       expect(mockSetUserLocationByZipCode).toHaveBeenCalledWith('94103');
