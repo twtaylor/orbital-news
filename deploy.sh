@@ -1,11 +1,66 @@
 #!/bin/bash
 set -e
 
-# Configuration
-REMOTE_USER="totmacher"
-REMOTE_HOST="totmacher.org"
-CLIENT_REMOTE_PATH="/var/www/localgrpnews"
-SERVER_REMOTE_PATH="/var/www/localgrpnewsapi"
+# Function to load environment variables from .env file
+load_env() {
+  ENV_FILE="$1"
+  if [ -f "$ENV_FILE" ]; then
+    echo "Loading environment from $ENV_FILE"
+    while IFS='=' read -r key value || [ -n "$key" ]; do
+      # Skip comments and empty lines
+      if [[ $key =~ ^[[:space:]]*# ]] || [[ -z $key ]]; then
+        continue
+      fi
+      # Remove leading/trailing whitespace and quotes from value
+      value=$(echo "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
+      # Export the variable
+      export "$key=$value"
+    done < "$ENV_FILE"
+  else
+    echo "No $ENV_FILE file found. Using default configuration."
+  fi
+}
+
+# Try to load from project root .env first, then from server/.env
+load_env "$(dirname "$0")/.env"
+load_env "$(dirname "$0")/server/.env"
+
+# Check required environment variables
+check_required_vars() {
+  local missing_vars=false
+  
+  if [ -z "$DEPLOY_REMOTE_USER" ]; then
+    echo -e "${RED}ERROR: DEPLOY_REMOTE_USER is not set in .env file${NC}"
+    missing_vars=true
+  fi
+  
+  if [ -z "$DEPLOY_REMOTE_HOST" ]; then
+    echo -e "${RED}ERROR: DEPLOY_REMOTE_HOST is not set in .env file${NC}"
+    missing_vars=true
+  fi
+  
+  if [ -z "$DEPLOY_CLIENT_REMOTE_PATH" ]; then
+    echo -e "${RED}ERROR: DEPLOY_CLIENT_REMOTE_PATH is not set in .env file${NC}"
+    missing_vars=true
+  fi
+  
+  if [ -z "$DEPLOY_SERVER_REMOTE_PATH" ]; then
+    echo -e "${RED}ERROR: DEPLOY_SERVER_REMOTE_PATH is not set in .env file${NC}"
+    missing_vars=true
+  fi
+  
+  if [ "$missing_vars" = true ]; then
+    echo -e "${RED}Deployment configuration is incomplete. Please check your .env file.${NC}"
+    echo -e "${YELLOW}See .env.deploy.example for required variables.${NC}"
+    exit 1
+  fi
+}
+
+# Set configuration from environment variables
+REMOTE_USER="$DEPLOY_REMOTE_USER"
+REMOTE_HOST="$DEPLOY_REMOTE_HOST"
+CLIENT_REMOTE_PATH="$DEPLOY_CLIENT_REMOTE_PATH"
+SERVER_REMOTE_PATH="$DEPLOY_SERVER_REMOTE_PATH"
 
 # Command line options
 LOCAL_ONLY=false
@@ -37,6 +92,9 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Check for required environment variables
+check_required_vars
 
 echo -e "${YELLOW}Starting Orbital News deployment...${NC}"
 
