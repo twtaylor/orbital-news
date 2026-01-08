@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import './App.css';
 import { OrbitalSystem } from './utils/OrbitalSystem';
 import { Article, Location } from './types/Article';
+import { trackArticleSelect, trackZipSearch } from './utils/analytics';
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +29,9 @@ function App() {
   
   // Handle article selection with useCallback to prevent recreation on every render
   const handleArticleSelect = useCallback((article: Article) => {
+    // Track article selection in GA4
+    trackArticleSelect(article.id, article.title, article.source);
+    
     // Always pause the simulation when an article is selected
     if (orbitalSystemRef.current) {
       orbitalSystemRef.current.togglePause(true); // Force pause
@@ -115,6 +119,9 @@ function App() {
 
   // Handle refresh
   const handleRefresh = () => {
+    // Track zip code search in GA4
+    trackZipSearch(zipCode);
+    
     if (orbitalSystemRef.current) {
       orbitalSystemRef.current.loadArticles(zipCode);
     }
