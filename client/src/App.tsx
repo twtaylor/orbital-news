@@ -3,6 +3,8 @@ import './App.css';
 import { OrbitalSystem } from './utils/OrbitalSystem';
 import { Article, Location } from './types/Article';
 import { trackArticleSelect, trackZipSearch } from './utils/analytics';
+import { IntroModal } from './components/IntroModal';
+import { getCookie, setCookie } from './utils/cookies';
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -14,6 +16,17 @@ function App() {
   const [zipCode, setZipCode] = useState('20001'); // Default to DC
   const [isPaused, setIsPaused] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [showIntroModal, setShowIntroModal] = useState(() => {
+    return getCookie('hideIntroModal') !== 'true';
+  });
+
+  // Handle dismissing the intro modal
+  const handleDismissIntro = useCallback((dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      setCookie('hideIntroModal', 'true', 365);
+    }
+    setShowIntroModal(false);
+  }, []);
   
   // Handle article hover with useCallback
   const handleArticleHover = useCallback((article: Article | null) => {
@@ -137,6 +150,9 @@ function App() {
 
   return (
     <div className="app">
+      {/* Intro modal */}
+      {showIntroModal && <IntroModal onDismiss={handleDismissIntro} />}
+
       {/* Orbital visualization container */}
       <div ref={containerRef} className="orbital-container"></div>
 

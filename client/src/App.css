@@ -328,3 +328,227 @@ body {
   font-size: 0.9rem;
   color: #ffffff;
 }
+
+/* ===== Intro Modal Styles ===== */
+
+.intro-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.intro-modal {
+  background-color: rgba(10, 10, 30, 0.95);
+  border: 1px solid rgba(255, 179, 0, 0.3);
+  border-radius: 16px;
+  padding: 30px 40px;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 60px rgba(255, 179, 0, 0.15);
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.intro-modal h1 {
+  font-size: 28px;
+  color: #ffb300;
+  text-align: center;
+  margin-bottom: 24px;
+  text-shadow: 0 0 20px rgba(255, 179, 0, 0.4);
+}
+
+.intro-section {
+  margin-bottom: 24px;
+}
+
+.intro-section h2 {
+  font-size: 18px;
+  color: #ffffff;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.intro-section p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #cccccc;
+  margin-bottom: 10px;
+}
+
+.intro-section p strong {
+  color: #ffb300;
+}
+
+/* Controls Grid */
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.control-group {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.control-group h3 {
+  font-size: 14px;
+  color: #ffb300;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.control-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.control-group li {
+  font-size: 13px;
+  color: #cccccc;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.control-key {
+  display: inline-block;
+  background-color: rgba(255, 179, 0, 0.2);
+  color: #ffb300;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: fit-content;
+  white-space: nowrap;
+}
+
+/* Tips section */
+.intro-tips ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.intro-tips li {
+  font-size: 14px;
+  color: #cccccc;
+  margin-bottom: 8px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.intro-tips li::before {
+  content: '•';
+  color: #ffb300;
+  position: absolute;
+  left: 0;
+}
+
+/* Footer with checkbox and button */
+.intro-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.intro-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #aaaaaa;
+  transition: color 0.2s;
+}
+
+.intro-checkbox-label:hover {
+  color: #ffffff;
+}
+
+.intro-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ffb300;
+  cursor: pointer;
+}
+
+.intro-button {
+  padding: 12px 32px;
+  background-color: #ffb300;
+  color: #09061b;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.intro-button:hover {
+  background-color: #ffc233;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 179, 0, 0.4);
+}
+
+.intro-button:active {
+  transform: translateY(0);
+}
+
+/* Responsive styles for intro modal */
+@media (max-width: 768px) {
+  .intro-modal {
+    margin: 16px;
+    padding: 24px;
+    max-height: 85vh;
+  }
+
+  .intro-modal h1 {
+    font-size: 24px;
+  }
+
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .intro-footer {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .intro-button {
+    width: 100%;
+  }
+}
